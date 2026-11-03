@@ -1,3 +1,4 @@
+//app/api/seed/route.ts
 import { NextResponse } from "next/server"
 import { seed } from "@/lib/seed"
 

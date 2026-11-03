@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 import { apiJson } from "@/lib/api"
+import { broadcastEvent } from "@/lib/events"
 
 export async function POST() {
   ;(await cookies()).set("token", "", {
@@ -9,5 +10,14 @@ export async function POST() {
     path: "/",
     maxAge: 0,
   })
+
+  broadcastEvent({
+    type: "auth_logout",
+    data: {
+      redirectTo: "/login",
+    },
+    timestamp: new Date().toISOString(),
+  })
+
   return apiJson({ success: true })
 }

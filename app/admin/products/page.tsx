@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import Link from "next/link"
+import { useEffect, useState, useRef } from "react"
+import ImageUpload from "@/components/ImageUpload"
 
 interface Product {
   id: string
@@ -28,9 +30,37 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
   const [loading, setLoading] = useState(true)
+  const [imageUrl, setImageUrl] = useState("")
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     load()
+
+    const es = new EventSource("/api/events")
+    eventSourceRef.current = es
+
+    es.addEventListener("product_updated", (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        load()
+      } catch {
+        load()
+      }
+    })
+
+    es.addEventListener("stock_updated", (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        load()
+      } catch {
+        load()
+      }
+    })
+
+    return () => {
+      es.close()
+      eventSourceRef.current = null
+    }
   }, [])
 
   async function load() {
@@ -46,11 +76,13 @@ export default function AdminProductsPage() {
   async function addProduct(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget as HTMLFormElement)
+    fd.append("imageUrl", imageUrl)
     const res = await fetch("/api/admin/products", { method: "POST", body: fd })
     const data = await res.json()
     if (res.ok) {
       setMessage({ text: "Product created", type: "success" })
       ;(e.currentTarget as HTMLFormElement).reset()
+      setImageUrl("")
       load()
     } else {
       setMessage({ text: data.error || "Failed", type: "error" })
@@ -106,7 +138,7 @@ export default function AdminProductsPage() {
         </div>
         <div>
           <div className="label">Image URL</div>
-          <input name="imageUrl" className="input" />
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
         </div>
         <div>
           <div className="label">Description</div>
@@ -117,7 +149,7 @@ export default function AdminProductsPage() {
           <input name="relatedIds" className="input" placeholder="id1, id2" />
         </div>
         <div style={{ display: "flex", alignItems: "end", gap: 0.5 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 0.4, fontSize: 0.9, marginBottom: 0 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 0.4, fontSize: "0.9rem", marginBottom: 0 }}>
             <input name="isActive" type="checkbox" defaultChecked />
             Active
           </label>
@@ -149,10 +181,17 @@ export default function AdminProductsPage() {
               <td style={{ textAlign: "center" }}>{p.stock}</td>
               <td style={{ textAlign: "center" }}>{p.isActive ? "Yes" : "No"}</td>
               <td style={{ textAlign: "right" }}>
+                <Link
+                  href={`/admin/products/${p.id}`}
+                  className="btn btn-outline"
+                  style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", marginRight: "0.4rem", color: "#2563eb" }}
+                >
+                  Edit
+                </Link>
                 <button
                   onClick={() => deleteProduct(p.id)}
                   className="btn btn-danger"
-                  style={{ padding: "0.35rem 0.8rem", fontSize: 0.85 }}
+                  style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", color: "#fff" }}
                 >
                   Delete
                 </button>

@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
+import PayButton from "@/components/PayButton"
 
 export const dynamic = "force-dynamic"
 
@@ -22,8 +23,22 @@ export default async function OrderPage({
   if (!order) {
     notFound()
   }
-  if (order.userId !== user.id) {
+  if (user.role !== "ADMIN" && order.userId !== user.id) {
     notFound()
+  }
+
+  const isPending = order.status === "PENDING"
+
+  function formatDateTime(dateStr: string): string {
+    const d = new Date(dateStr)
+    return d.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
   }
 
   return (
@@ -68,25 +83,52 @@ export default async function OrderPage({
         </div>
         <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 8, padding: 1.25 }}>
           <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Payment (Telebirr)</h2>
-          <p style={{ fontSize: 0.9, color: "#334155", marginBottom: 0.5 }}>
+          <p style={{ fontSize: "0.9rem", color: "#334155", marginBottom: 0.5 }}>
             Method: <strong>Telebirr Mobile Money</strong>
           </p>
-          <p style={{ fontSize: 0.9, color: "#334155", marginBottom: 0.5 }}>
+          <p style={{ fontSize: "0.9rem", color: "#334155", marginBottom: 0.5 }}>
             Amount:{" "}
             {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(order.payment?.amount ?? order.total))}
           </p>
-          <p style={{ fontSize: 0.9, color: "#334155", marginBottom: 1 }}>
+          <p style={{ fontSize: "0.9rem", color: "#334155", marginBottom: 1 }}>
             Reference:{" "}
             <strong>{order.payment?.reference ?? "—"}</strong>
           </p>
           <span className={`badge badge-${order.payment?.status?.toLowerCase() ?? "pending"}`}>
             Payment: {order.payment?.status ?? "PENDING"}
           </span>
-          <p style={{ marginTop: 1, fontSize: 0.85, color: "#64748b" }}>
+          <p style={{ marginTop: 1, fontSize: "0.85rem", color: "#64748b" }}>
             To simulate payment completion, use the Telebirr callback with this order&apos;s
             reference.
           </p>
+          {isPending && <PayButton orderNumber={order.orderNumber} />}
         </div>
+      </div>
+
+      <div style={{ marginTop: 2 }}>
+        <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 0.5 }}>Order Details</h2>
+        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+          Order Number: <strong>{order.orderNumber}</strong>
+        </p>
+        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+          Order Date: <strong>{formatDateTime(order.createdAt.toISOString())}</strong>
+        </p>
+        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+          Status: <span className={`badge badge-${order.status.toLowerCase()}`}>{order.status}</span>
+        </p>
+        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+          Shipping: <span className={`badge badge-${order.shippingStatus.toLowerCase()}`}>{order.shippingStatus}</span>
+        </p>
+        {order.shippingAddress && (
+          <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+            Shipping Address: {order.shippingAddress}
+          </p>
+        )}
+        {order.shippingMethod && (
+          <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+            Shipping Method: {order.shippingMethod}
+          </p>
+        )}
       </div>
 
       <Link href="/orders" className="btn btn-outline">

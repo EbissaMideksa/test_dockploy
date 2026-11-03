@@ -31,6 +31,18 @@ enum PaymentMethod {
   TELEBIRR
 }
 
+enum ShippingStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ShippingMethod {
+  REMOTE
+  PICKUP
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -106,6 +118,9 @@ model Order {
   userId         String
   user           User          @relation(fields: [userId], references: [id])
   status         OrderStatus   @default(PENDING)
+  shippingStatus ShippingStatus @default(PENDING)
+  shippingMethod ShippingMethod   @default(REMOTE)
+  shippingAddress String?
   total          Decimal       @db.Decimal(10, 2)
   items          OrderItem[]
   payment        Payment?
@@ -115,6 +130,7 @@ model Order {
   @@index([orderNumber])
   @@index([userId])
   @@index([status])
+  @@index([shippingStatus])
 }
 
 model OrderItem {
@@ -136,6 +152,7 @@ model Payment {
   amount         Decimal        @db.Decimal(10, 2)
   status         PaymentStatus  @default(PENDING)
   reference      String?
+  transactionNumber String?
   phoneNumber    String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -143,4 +160,14 @@ model Payment {
   @@index([orderId])
   @@index([status])
   @@index([reference])
+  @@index([transactionNumber])
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
 }

@@ -39,7 +39,7 @@ export default function LoginPage() {
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", padding: "0.75rem" }}>
           {loading ? "Signing in..." : "Sign in"}
         </button>
-        <p style={{ marginTop: 1, fontSize: 0.9, color: "#64748b" }}>
+        <p style={{ marginTop: 1, fontSize: "0.9rem", color: "#64748b" }}>
           Don&apos;t have an account?{" "}
           <Link href="/register" style={{ fontWeight: 600 }}>Register</Link>
         </p>

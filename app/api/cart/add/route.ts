@@ -1,5 +1,6 @@
 import { getApiUser, readBody, apiError, apiJson } from "@/lib/api"
 import { prisma } from "@/lib/prisma"
+import { broadcastEvent } from "@/lib/events"
 
 export async function POST(req: Request) {
   const user = await getApiUser()
@@ -39,6 +40,17 @@ export async function POST(req: Request) {
       data: { cartId: cart.id, productId, quantity: qty },
     })
   }
+
+  broadcastEvent({
+    type: "cart_updated",
+    data: {
+      userId: user.id,
+      productId,
+      action: "added",
+      quantity: qty,
+    },
+    timestamp: new Date().toISOString(),
+  })
 
   return apiJson({ success: true })
 }

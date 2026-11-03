@@ -49,7 +49,7 @@ export default function RegisterPage() {
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", padding: "0.75rem" }}>
           {loading ? "Creating account..." : "Create account"}
         </button>
-        <p style={{ marginTop: 1, fontSize: 0.9, color: "#64748b" }}>
+        <p style={{ marginTop: 1, fontSize: "0.9rem", color: "#64748b" }}>
           Already have an account?{" "}
           <Link href="/login" style={{ fontWeight: 600 }}>Log in</Link>
         </p>

@@ -1,3 +1,4 @@
+//app/api/orders/route.ts
 import { getApiUser, apiError, apiJson } from "@/lib/api"
 import { prisma } from "@/lib/prisma"
 
@@ -18,6 +19,9 @@ export async function GET() {
       id: o.id,
       orderNumber: o.orderNumber,
       status: o.status,
+      shippingStatus: o.shippingStatus,
+      shippingMethod: o.shippingMethod,
+      shippingAddress: o.shippingAddress,
       total: Number(o.total),
       createdAt: o.createdAt,
       payment: o.payment,

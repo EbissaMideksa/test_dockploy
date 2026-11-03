@@ -51,3 +51,25 @@ export async function DELETE(req: Request) {
   await prisma.category.delete({ where: { id } })
   return new Response(JSON.stringify({ success: true }), { status: 200 })
 }
+
+export async function PATCH(req: Request) {
+  const admin = await requireAdmin()
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 })
+  }
+  const fd = await req.formData()
+  const id = String(fd.get("id") ?? "")
+  const name = String(fd.get("name") ?? "")
+  const slug = String(fd.get("slug") ?? "") || name.toLowerCase().replace(/\s+/g, "-")
+  const imageUrl = String(fd.get("imageUrl") ?? "") || undefined
+
+  if (!id || !name || !slug) {
+    return new Response(JSON.stringify({ error: "id, name and slug are required" }), { status: 400 })
+  }
+
+  await prisma.category.update({
+    where: { id },
+    data: { name, slug, imageUrl },
+  })
+  return new Response(JSON.stringify({ success: true }), { status: 200 })
+}

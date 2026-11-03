@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 
 interface Category {
@@ -48,7 +49,7 @@ export default function AdminCategoriesPage() {
       <h1 style={{ fontSize: 1.75, fontWeight: 700, marginBottom: 1.5 }}>Categories</h1>
       {message.text && <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>}
       <form onSubmit={addCategory} className="card" style={{ display: "flex", gap: 0.75, marginBottom: 1.5 }}>
-        <input name="name" required className="input" placeholder="Category name" style={{ flex: 1 }} />
+        <input name="name" required className="input" placeholder="Category name" style={{width: 100 }} />
         <input name="slug" className="input" placeholder="slug" style={{ width: 180 }} />
         <input name="imageUrl" className="input" placeholder="image URL" style={{ width: 220 }} />
         <button type="submit" className="btn btn-primary">Add Category</button>
@@ -64,10 +65,17 @@ export default function AdminCategoriesPage() {
               <td>{c.slug}</td>
               <td style={{ textAlign: "center" }}>{c._count.products}</td>
               <td style={{ textAlign: "right" }}>
+                <Link
+                  href={`/admin/categories/${c.id}`}
+                  className="btn btn-outline"
+                  style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", marginRight: "0.4rem", color: "#2563eb" }}
+                >
+                  Edit
+                </Link>
                 <button
                   onClick={() => deleteCategory(c.id)}
                   className="btn btn-danger"
-                  style={{ padding: "0.35rem 0.8rem", fontSize: 0.85 }}
+                  style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", color: "#fff" }}
                 >
                   Delete
                 </button>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 
 interface CartItem {
@@ -14,9 +14,33 @@ export default function CartPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     loadCart()
+
+    const es = new EventSource("/api/events")
+    eventSourceRef.current = es
+
+    es.addEventListener("cart_updated", () => {
+      loadCart()
+    })
+
+    es.addEventListener("order_created", (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.userId) {
+          loadCart()
+        }
+      } catch {
+        loadCart()
+      }
+    })
+
+    return () => {
+      es.close()
+      eventSourceRef.current = null
+    }
   }, [])
 
   async function loadCart() {
@@ -72,7 +96,11 @@ export default function CartPage() {
         <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>
       )}
       {items.length === 0 ? (
-        <p>Your cart is empty. <Link href="/">Browse products</Link>.</p>
+        <div className="empty-state fade-in">
+          <h3>Your cart is empty</h3>
+          <p>Looks like you have not added anything yet.</p>
+          <Link href="/" className="btn btn-primary">Browse Products</Link>
+        </div>
       ) : (
         <>
           <table className="table">
@@ -111,7 +139,7 @@ export default function CartPage() {
                     <button
                       onClick={() => removeItem(item.id)}
                       className="btn btn-danger"
-                      style={{ padding: "0.35rem 0.8rem", fontSize: 0.85 }}
+                      style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", color: "#fff" }}
                     >
                       Remove
                     </button>

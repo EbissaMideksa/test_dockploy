@@ -47,30 +47,30 @@ export default async function AdminPage() {
 
       <div style={{ display: "grid", gap: 1, gridTemplateColumns: "repeat(4, 1fr)", marginBottom: 2 }}>
         <div className="card" style={{ padding: 1.25 }}>
-          <p style={{ margin: 0, fontSize: 0.85, color: "#64748b" }}>Products</p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Products</p>
           <p style={{ margin: 0.25, fontSize: 1.5, fontWeight: 700 }}>{products.length}</p>
         </div>
         <div className="card" style={{ padding: 1.25 }}>
-          <p style={{ margin: 0, fontSize: 0.85, color: "#64748b" }}>Categories</p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Categories</p>
           <p style={{ margin: 0.25, fontSize: 1.5, fontWeight: 700 }}>{categories.length}</p>
         </div>
         <div className="card" style={{ padding: 1.25 }}>
-          <p style={{ margin: 0, fontSize: 0.85, color: "#64748b" }}>Orders</p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Orders</p>
           <p style={{ margin: 0.25, fontSize: 1.5, fontWeight: 700 }}>{orders.length}</p>
         </div>
         <div className="card" style={{ padding: 1.25 }}>
-          <p style={{ margin: 0, fontSize: 0.85, color: "#64748b" }}>Pending Orders</p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Pending Orders</p>
           <p style={{ margin: 0.25, fontSize: 1.5, fontWeight: 700 }}>{pending}</p>
         </div>
         <div className="card" style={{ padding: 1.25 }}>
-          <p style={{ margin: 0, fontSize: 0.85, color: "#64748b" }}>Total Sales</p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Total Sales</p>
           <p style={{ margin: 0.25, fontSize: 1.5, fontWeight: 700 }}>
             {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(totalSales)}
           </p>
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 1, gridTemplateColumns: "repeat(3, 1fr)" }}>
+      <div style={{ display: "grid", gap: 1, gridTemplateColumns: "repeat(4, 1fr)" }}>
         <Link href="/admin/products" className="btn btn-primary" style={{ width: "100%" }}>
           Manage Products
         </Link>
@@ -79,6 +79,9 @@ export default async function AdminPage() {
         </Link>
         <Link href="/admin/orders" className="btn btn-outline" style={{ width: "100%" }}>
           Manage Orders
+        </Link>
+        <Link href="/admin/settings" className="btn btn-outline" style={{ width: "100%" }}>
+          Settings
         </Link>
       </div>
     </div>

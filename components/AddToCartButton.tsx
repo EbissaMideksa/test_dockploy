@@ -53,7 +53,7 @@ export default function AddToCartButton({
         type="submit"
         disabled={loading || stock === 0}
         className="btn btn-primary"
-        style={{ padding: "0.6rem 1.4rem", fontSize: 0.9 }}
+        style={{ padding: "0.6rem 1.4rem", fontSize: "0.9rem" }}
       >
         {stock === 0 ? "Out of stock" : loading ? "Adding…" : "Add to Cart"}
       </button>
@@ -61,7 +61,7 @@ export default function AddToCartButton({
         <span
           style={{
             marginLeft: 0.75,
-            fontSize: 0.85,
+            fontSize: "0.85rem",
             fontWeight: 600,
             color: message.type === "error" ? "#dc2626" : "#059669",
             whiteSpace: "nowrap",

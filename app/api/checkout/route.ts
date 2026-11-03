@@ -1,5 +1,6 @@
 import { getApiUser, readBody, apiError, apiJson } from "@/lib/api"
 import { prisma } from "@/lib/prisma"
+import { broadcastEvent } from "@/lib/events"
 
 export async function POST(req: Request) {
   const user = await getApiUser()
@@ -7,8 +8,9 @@ export async function POST(req: Request) {
     return apiError("Unauthenticated", 401)
   }
 
-  const { phoneNumber } = await readBody(req)
+  const { phoneNumber, shippingAddress } = await readBody(req)
   const phone = phoneNumber || null
+  const shipping = shippingAddress || null
 
   const cart = await prisma.cart.findUnique({
     where: { userId: user.id },
@@ -35,6 +37,8 @@ export async function POST(req: Request) {
       userId: user.id,
       total,
       status: "PENDING",
+      shippingAddress: shipping,
+      shippingMethod: shipping ? "REMOTE" : "PICKUP",
       items: {
         create: cart.items.map((item) => ({
           productId: item.productId,
@@ -63,6 +67,19 @@ export async function POST(req: Request) {
   }
 
   await prisma.cartItem.deleteMany({ where: { cartId: cart.id } })
+
+  broadcastEvent({
+    type: "order_created",
+    data: {
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      userId: order.userId,
+      total: Number(order.total),
+      status: order.status,
+    },
+    timestamp: new Date().toISOString(),
+    orderId: order.id,
+  })
 
   return apiJson({ success: true, order }, 201)
 }

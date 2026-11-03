@@ -55,7 +55,7 @@ export default async function ProductPage({
         <div style={{ flex: 1, minWidth: 300 }}>
           <h1 style={{ fontSize: 1.75, fontWeight: 700, margin: "0 0 0.5rem" }}>{product.name}</h1>
           {product.category && (
-            <p style={{ margin: "0 0 1rem", fontSize: 0.9, color: "#64748b" }}>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "#64748b" }}>
               <Link href={`/?cat=${product.category.slug}`}>{product.category.name}</Link>
             </p>
           )}
@@ -65,7 +65,7 @@ export default async function ProductPage({
           <p style={{ margin: "0 0 1rem", fontSize: 1.5, fontWeight: 700 }}>
             {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(product.price))}
           </p>
-          <p style={{ margin: "0 0 1rem", fontSize: 0.9, color: product.stock > 0 ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
+          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: product.stock > 0 ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
             {product.stock > 0 ? `In stock (${product.stock})` : "Out of stock"}
           </p>
           <AddToCartButton productId={product.id} stock={product.stock} />
@@ -88,7 +88,7 @@ export default async function ProductPage({
                 <h3 style={{ margin: "0 0 0.4rem", fontSize: 1 }}>
                   <Link href={`/products/${p.slug}`}>{p.name}</Link>
                 </h3>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: 0.95 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem" }}>
                   {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(p.price))}
                 </p>
               </article>

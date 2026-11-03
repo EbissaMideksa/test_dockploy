@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { apiError, apiJson } from "@/lib/api"
+import { broadcastEvent } from "@/lib/events"
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me"
 
@@ -17,6 +18,26 @@ async function readBody(req: Request) {
     obj[k] = String(v)
   }
   return obj
+}
+
+async function getSessionTimeoutMinutes(): Promise<number> {
+  try {
+    const setting = await prisma.appSetting.findUnique({ where: { key: "sessionTimeoutMinutes" } })
+    if (setting) {
+      return parseInt(setting.value, 10) || 60 * 24 * 7
+    }
+  } catch {
+    // ignore
+  }
+  return 60 * 24 * 7
+}
+
+function formatExpiry(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0 && mins > 0) return `${hours}h${mins}m`
+  if (hours > 0) return `${hours}h`
+  return `${mins}m`
 }
 
 export async function POST(req: Request) {
@@ -36,17 +57,32 @@ export async function POST(req: Request) {
     return apiError("Invalid email or password", 401)
   }
 
+  const sessionMinutes = await getSessionTimeoutMinutes()
+  const expiresIn = formatExpiry(sessionMinutes)
+  const maxAge = sessionMinutes * 60
+
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
     JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn } as jwt.SignOptions
   )
   ;(await cookies()).set("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge,
+  })
+
+  broadcastEvent({
+    type: "auth_login",
+    data: {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      redirectTo: "/",
+    },
+    timestamp: new Date().toISOString(),
   })
 
   return apiJson({ success: true, user: { id: user.id, email: user.email, role: user.role } })

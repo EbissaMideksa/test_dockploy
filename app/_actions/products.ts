@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { broadcastEvent } from "@/lib/events"
 import type { OrderStatus } from "@prisma/client"
 
 export async function createProduct(formData: FormData) {
@@ -25,7 +26,7 @@ export async function createProduct(formData: FormData) {
     return { error: "Name, slug, price and stock are required" }
   }
 
-  await prisma.product.create({
+  const product = await prisma.product.create({
     data: {
       name,
       slug,
@@ -37,6 +38,16 @@ export async function createProduct(formData: FormData) {
       isActive,
       relatedIds,
     },
+  })
+
+  broadcastEvent({
+    type: "product_updated",
+    data: {
+      productId: product.id,
+      action: "created",
+      name: product.name,
+    },
+    timestamp: new Date().toISOString(),
   })
 
   revalidatePath("/admin")
@@ -75,6 +86,16 @@ export async function updateProduct(formData: FormData) {
     },
   })
 
+  broadcastEvent({
+    type: "product_updated",
+    data: {
+      productId: id,
+      action: "updated",
+      name,
+    },
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath("/admin")
   revalidatePath("/admin/products")
 }
@@ -83,6 +104,16 @@ export async function deleteProduct(formData: FormData) {
   await requireAdmin()
   const id = String(formData.get("id") ?? "")
   await prisma.product.delete({ where: { id } })
+
+  broadcastEvent({
+    type: "product_updated",
+    data: {
+      productId: id,
+      action: "deleted",
+    },
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath("/admin")
   revalidatePath("/admin/products")
 }
@@ -130,17 +161,50 @@ export async function getAdminCategories() {
 
 export async function getAdminOrders() {
   await requireAdmin()
-  return prisma.order.findMany({
-    include: { user: true, items: { include: { product: true } }, payment: true },
+  const orders = await prisma.order.findMany({
+    include: { user: { select: { email: true } }, items: { include: { product: true } }, payment: true },
     orderBy: { createdAt: "desc" },
   })
+  return orders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    user: o.user.email,
+    status: o.status,
+    shippingStatus: o.shippingStatus,
+    shippingMethod: o.shippingMethod,
+    shippingAddress: o.shippingAddress,
+    total: Number(o.total),
+    paymentStatus: o.payment?.status,
+    createdAt: o.createdAt,
+    items: o.items.map((i) => ({ product: i.product.name, quantity: i.quantity })),
+  }))
 }
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin()
   const id = String(formData.get("id") ?? "")
   const status = String(formData.get("status") ?? "")
+
+  const order = await prisma.order.findUnique({ where: { id } })
+  if (!order) {
+    return { error: "Order not found" }
+  }
+
   await prisma.order.update({ where: { id }, data: { status: status as OrderStatus } })
+
+  broadcastEvent({
+    type: "order_updated",
+    data: {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      userId: order.userId,
+      status,
+      previousStatus: order.status,
+    },
+    timestamp: new Date().toISOString(),
+    orderId: order.id,
+  })
+
   revalidatePath("/admin/orders")
   return { success: true }
 }
