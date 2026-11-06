@@ -2,6 +2,15 @@
 
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 
 interface AdminOrder {
   id: string
@@ -14,6 +23,17 @@ interface AdminOrder {
   shippingAddress: string | null
   total: number
   createdAt: string
+}
+
+function badgeVariant(status: string) {
+  switch (status.toLowerCase()) {
+    case "pending": return "secondary"
+    case "paid": return "default"
+    case "shipped": return "default"
+    case "delivered": return "default"
+    case "cancelled": return "destructive"
+    default: return "outline"
+  }
 }
 
 function formatDateTime(dateStr: string): string {
@@ -52,32 +72,9 @@ export default function AdminOrdersPage() {
     const es = new EventSource("/api/events")
     eventSourceRef.current = es
 
-    es.addEventListener("order_updated", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("shipping_updated", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("payment_completed", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
+    es.addEventListener("order_updated", () => { loadOrders() })
+    es.addEventListener("shipping_updated", () => { loadOrders() })
+    es.addEventListener("payment_completed", () => { loadOrders() })
 
     return () => {
       es.close()
@@ -100,37 +97,41 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="section" style={{ maxWidth: 1200 }}>
-      <h1 style={{ fontSize: 1.75, fontWeight: 700, marginBottom: 1.5 }}>Manage Orders</h1>
-      {message.text && <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>}
+    <div className="mx-auto max-w-[1100px] py-8">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-foreground">Manage Orders</h1>
+        <Button variant="outline" asChild>
+          <Link href="/admin"><ArrowLeft className="h-4 w-4" />Dashboard</Link>
+        </Button>
+      </div>
+      {message.text && <p className={`mb-4 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>{message.text}</p>}
       {orders.length === 0 ? (
         <p>No orders.</p>
       ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Order #</th>
-              <th>Customer</th>
-              <th>Order Status</th>
-              <th>Shipping Status</th>
-              <th>Shipping Method</th>
-              <th>Shipping Address</th>
-              <th style={{ textAlign: "right" }}>Total</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order #</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Order Status</TableHead>
+              <TableHead>Shipping Status</TableHead>
+              <TableHead>Shipping Method</TableHead>
+              <TableHead>Shipping Address</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {orders.map((o) => (
-              <tr key={o.id}>
-                <td>{o.orderNumber}</td>
-                <td>{o.user}</td>
-                <td>
+              <TableRow key={o.id}>
+                <TableCell>{o.orderNumber}</TableCell>
+                <TableCell>{o.user}</TableCell>
+                <TableCell>
                   <select
                     defaultValue={o.status}
                     onChange={(e) => updateOrder(o.id, "status", e.target.value)}
-                    className="input"
-                    style={{ width: 130, padding: "0.3rem", fontSize: "0.85rem" }}
+                    className="border border-input rounded-md p-1 text-xs w-[130px] focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="PENDING">Pending</option>
                     <option value="PAID">Paid</option>
@@ -138,35 +139,34 @@ export default function AdminOrdersPage() {
                     <option value="DELIVERED">Delivered</option>
                     <option value="CANCELLED">Cancelled</option>
                   </select>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <select
                     defaultValue={o.shippingStatus}
                     onChange={(e) => updateOrder(o.id, "shippingStatus", e.target.value)}
-                    className="input"
-                    style={{ width: 130, padding: "0.3rem", fontSize: "0.85rem" }}
+                    className="border border-input rounded-md p-1 text-xs w-[130px] focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="PENDING">Pending</option>
                     <option value="SHIPPED">Shipped</option>
                     <option value="DELIVERED">Delivered</option>
                     <option value="CANCELLED">Cancelled</option>
                   </select>
-                </td>
-                <td>{o.shippingMethod}</td>
-                <td>{o.shippingAddress || "—"}</td>
-                <td style={{ textAlign: "right" }}>
+                </TableCell>
+                <TableCell>{o.shippingMethod}</TableCell>
+                <TableCell>{o.shippingAddress || "—"}</TableCell>
+                <TableCell className="text-right">
                   {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(o.total)}
-                </td>
-                <td>{formatDateTime(o.createdAt)}</td>
-                <td>
-                  <Link href={`/orders/${o.id}`} className="btn btn-outline btn-sm" style={{ padding: "0.35rem 0.8rem" }}>
-                    View
-                  </Link>
-                </td>
-              </tr>
+                </TableCell>
+                <TableCell>{formatDateTime(o.createdAt)}</TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/orders/${o.id}`}>View</Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </div>
   )

@@ -2,8 +2,21 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
+import { Card } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
+import { CardHeader } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
 
-interface AppSetting {
+interface Setting {
   id: string
   key: string
   value: string
@@ -11,7 +24,7 @@ interface AppSetting {
 }
 
 export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState<AppSetting[]>([])
+  const [settings, setSettings] = useState<Setting[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
@@ -38,12 +51,6 @@ export default function AdminSettingsPage() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    ;(async () => {
-      await loadSettings()
-    })()
-  }, [])
-
   async function saveSetting(key: string, value: string) {
     const res = await fetch("/api/admin/settings", {
       method: "POST",
@@ -59,6 +66,12 @@ export default function AdminSettingsPage() {
     }
   }
 
+  useEffect(() => {
+    ;(async () => {
+      await loadSettings()
+    })()
+  }, [])
+
   if (loading) return <p>Loading...</p>
 
   const sessionTimeoutMinutes = settings.find((s) => s.key === "sessionTimeoutMinutes")
@@ -72,105 +85,105 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="section" style={{ maxWidth: 800 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1.5 }}>
-        <h1 className="page-title" style={{ margin: 0 }}>Admin Settings</h1>
-        <Link href="/admin" className="btn btn-outline">Back to Dashboard</Link>
+    <div className="mx-auto max-w-[800px] py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Admin Settings</h1>
+        <Button variant="outline" asChild>
+          <Link href="/admin"><ArrowLeft className="h-4 w-4" />Dashboard</Link>
+        </Button>
       </div>
 
       {message.text && (
-        <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>
+        <p className={`mb-4 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>{message.text}</p>
       )}
 
-      <div className="card fade-in">
-        <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Session Timeout</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: 1, marginBottom: 1 }}>
-          <span style={{ fontWeight: 600, color: "#334155" }}>Session Timeout:</span>
-          {editing === "sessionTimeoutMinutes" ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <input
-                type="number"
-                min="1"
-                max="525600"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="input"
-                style={{ width: 80 }}
-                onBlur={() => {
-                  if (editValue) {
-                    saveSetting("sessionTimeoutMinutes", editValue)
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && editValue) {
-                    saveSetting("sessionTimeoutMinutes", editValue)
-                  }
-                }}
-              />
-              <span style={{ fontSize: "0.85rem", color: "#64748b" }}>minutes</span>
-            </div>
-          ) : (
-            <>
-              <span
-                style={{
-                  fontSize: 1.1,
-                  fontWeight: 700,
-                  color: "#2563eb",
-                }}
-              >
-                {sessionTimeoutMinutes?.value ? formatTimeout(parseInt(sessionTimeoutMinutes.value, 10)) : "7d"}
-              </span>
-              <button
-                onClick={() => {
-                  setEditValue(sessionTimeoutMinutes?.value ?? "10080")
-                  setEditing("sessionTimeoutMinutes")
-                }}
-                className="btn btn-outline btn-sm"
-                style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem" }}
-              >
-                Edit
-              </button>
-            </>
-          )}
-          <p className="muted" style={{ fontSize: "0.85rem", marginLeft: 1 }}>
-            Controls how long user login sessions remain valid before requiring re-login.
-          </p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Session Timeout</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 mb-4">
+            <span className="font-semibold text-foreground">Session Timeout:</span>
+            {editing === "sessionTimeoutMinutes" ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  max="525600"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  className="w-[80px]"
+                  onBlur={() => {
+                    if (editValue) {
+                      saveSetting("sessionTimeoutMinutes", editValue)
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && editValue) {
+                      saveSetting("sessionTimeoutMinutes", editValue)
+                    }
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">minutes</span>
+              </div>
+            ) : (
+              <>
+                <span className="text-lg font-bold text-primary">
+                  {sessionTimeoutMinutes?.value ? formatTimeout(parseInt(sessionTimeoutMinutes.value, 10)) : "7d"}
+                </span>
+                <Button
+                  onClick={() => {
+                    setEditValue(sessionTimeoutMinutes?.value ?? "10080")
+                    setEditing("sessionTimeoutMinutes")
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Edit
+                </Button>
+              </>
+            )}
+            <p className="text-sm text-muted-foreground ml-4">
+              Controls how long user login sessions remain valid before requiring re-login.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div style={{ marginTop: 2 }}>
-        <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>All Settings</h2>
-        <table className="table" style={{ marginBottom: 1.5 }}>
-          <thead>
-            <tr>
-              <th>Key</th>
-              <th>Value</th>
-              <th>Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-foreground mb-4">All Settings</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Key</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {settings.map((s) => (
-              <tr key={s.id}>
-                <td style={{ fontWeight: 600 }}>{s.key}</td>
-                <td>{s.value}</td>
-                <td>{new Date(s.updatedAt).toLocaleDateString()}</td>
-                <td style={{ textAlign: "right" }}>
-                  <button
+              <TableRow key={s.id}>
+                <TableCell className="font-medium">{s.key}</TableCell>
+                <TableCell>{s.value}</TableCell>
+                <TableCell>{new Date(s.updatedAt).toLocaleDateString()}</TableCell>
+                <td className="p-4 text-right">
+                  <Button
                     onClick={() => {
                       setEditValue(s.value)
                       setEditing(s.key)
                     }}
-                className="btn btn-outline btn-sm"
-                style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", marginRight: 0.4 }}
+                    variant="outline"
+                    size="sm"
+                    className="mr-2"
                   >
                     Edit
-                  </button>
+                  </Button>
                 </td>
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

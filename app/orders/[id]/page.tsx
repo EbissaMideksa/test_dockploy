@@ -3,8 +3,27 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import PayButton from "@/components/PayButton"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
 
 export const dynamic = "force-dynamic"
+
+function badgeVariant(status: string) {
+  switch (status.toLowerCase()) {
+    case "pending": return "secondary"
+    case "paid": return "default"
+    case "shipped": return "default"
+    case "delivered": return "default"
+    case "cancelled": return "destructive"
+    default: return "outline"
+  }
+}
 
 export default async function OrderPage({
   params,
@@ -42,98 +61,96 @@ export default async function OrderPage({
   }
 
   return (
-    <div className="section" style={{ maxWidth: 700 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1.5 }}>
-        <h1 style={{ fontSize: 1.75, fontWeight: 700, margin: 0 }}>Order {order.orderNumber}</h1>
-        <span className={`badge badge-${order.status.toLowerCase()}`} style={{ fontSize: 1 }}>
+    <div className="mx-auto max-w-[700px] py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Order {order.orderNumber}</h1>
+        <Badge variant={badgeVariant(order.status)} className="text-base">
           Status: {order.status}
-        </span>
+        </Badge>
       </div>
 
-      <div style={{ display: "flex", gap: 2, marginBottom: 2 }}>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Items</h2>
-          <table className="table" style={{ marginBottom: 1.5 }}>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th style={{ textAlign: "right" }}>Price</th>
-                <th style={{ textAlign: "center" }}>Qty</th>
-                <th style={{ textAlign: "right" }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
+      <div className="flex gap-8 mb-8">
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Items</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-center">Qty</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {order.items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.product.name}</td>
-                  <td style={{ textAlign: "right" }}>
+                <TableRow key={item.id}>
+                  <TableCell>{item.product.name}</TableCell>
+                  <TableCell className="text-right">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(item.price))}
-                  </td>
-                  <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                  <td style={{ textAlign: "right" }}>
+                  </TableCell>
+                  <TableCell className="text-center">{item.quantity}</TableCell>
+                  <TableCell className="text-right">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(item.price) * item.quantity)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-          <p style={{ fontWeight: 700, textAlign: "right" }}>
+            </TableBody>
+          </Table>
+          <p className="font-bold text-right mt-4">
             Total: {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(order.total))}
           </p>
         </div>
-        <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 8, padding: 1.25 }}>
-          <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Payment (Telebirr)</h2>
-          <p style={{ fontSize: "0.9rem", color: "#334155", marginBottom: 0.5 }}>
-            Method: <strong>Telebirr Mobile Money</strong>
+        <div className="flex-1 bg-muted rounded-lg p-5">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Payment (Telebirr)</h2>
+          <p className="text-sm text-muted-foreground mb-2">
+            Method: <strong className="text-foreground">Telebirr Mobile Money</strong>
           </p>
-          <p style={{ fontSize: "0.9rem", color: "#334155", marginBottom: 0.5 }}>
+          <p className="text-sm text-muted-foreground mb-2">
             Amount:{" "}
             {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(order.payment?.amount ?? order.total))}
           </p>
-          <p style={{ fontSize: "0.9rem", color: "#334155", marginBottom: 1 }}>
-            Reference:{" "}
-            <strong>{order.payment?.reference ?? "—"}</strong>
+          <p className="text-sm text-muted-foreground mb-4">
+            Reference: <strong className="text-foreground">{order.payment?.reference ?? "—"}</strong>
           </p>
-          <span className={`badge badge-${order.payment?.status?.toLowerCase() ?? "pending"}`}>
+          <Badge variant={badgeVariant(order.payment?.status?.toLowerCase() ?? "pending")}>
             Payment: {order.payment?.status ?? "PENDING"}
-          </span>
-          <p style={{ marginTop: 1, fontSize: "0.85rem", color: "#64748b" }}>
-            To simulate payment completion, use the Telebirr callback with this order&apos;s
-            reference.
+          </Badge>
+          <p className="mt-4 text-sm text-muted-foreground">
+            To simulate payment completion, use the Telebirr callback with this order&apos;s reference.
           </p>
           {isPending && <PayButton orderNumber={order.orderNumber} />}
         </div>
       </div>
 
-      <div style={{ marginTop: 2 }}>
-        <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 0.5 }}>Order Details</h2>
-        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-          Order Number: <strong>{order.orderNumber}</strong>
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Order Details</h2>
+        <p className="text-sm text-muted-foreground">
+          Order Number: <strong className="text-foreground">{order.orderNumber}</strong>
         </p>
-        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-          Order Date: <strong>{formatDateTime(order.createdAt.toISOString())}</strong>
+        <p className="text-sm text-muted-foreground">
+          Order Date: <strong className="text-foreground">{formatDateTime(order.createdAt.toISOString())}</strong>
         </p>
-        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-          Status: <span className={`badge badge-${order.status.toLowerCase()}`}>{order.status}</span>
+        <p className="text-sm text-muted-foreground">
+          Status: <Badge variant={badgeVariant(order.status)}>{order.status}</Badge>
         </p>
-        <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-          Shipping: <span className={`badge badge-${order.shippingStatus.toLowerCase()}`}>{order.shippingStatus}</span>
+        <p className="text-sm text-muted-foreground">
+          Shipping: <Badge variant={badgeVariant(order.shippingStatus)}>{order.shippingStatus}</Badge>
         </p>
         {order.shippingAddress && (
-          <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+          <p className="text-sm text-muted-foreground">
             Shipping Address: {order.shippingAddress}
           </p>
         )}
         {order.shippingMethod && (
-          <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
+          <p className="text-sm text-muted-foreground">
             Shipping Method: {order.shippingMethod}
           </p>
         )}
       </div>
 
-      <Link href="/orders" className="btn btn-outline">
-        &larr; Back to orders
-      </Link>
+      <Button variant="outline" asChild>
+        <Link href="/orders">&larr; Back to orders</Link>
+      </Button>
     </div>
   )
 }

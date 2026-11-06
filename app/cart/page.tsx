@@ -2,6 +2,13 @@
 
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 
 interface CartItem {
   id: string
@@ -87,82 +94,84 @@ export default function CartPage() {
     }
   }
 
-  if (loading) return <p>Loading cart...</p>
+  if (loading) return <p className="text-center py-10">Loading cart...</p>
 
   return (
-    <div className="section" style={{ maxWidth: 900 }}>
-      <h1 style={{ fontSize: 1.75, fontWeight: 700, marginBottom: 1 }}>Shopping Cart</h1>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-foreground mb-6">Shopping Cart</h1>
       {message.text && (
-        <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>
+        <p className={`mb-4 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>{message.text}</p>
       )}
       {items.length === 0 ? (
-        <div className="empty-state fade-in">
-          <h3>Your cart is empty</h3>
-          <p>Looks like you have not added anything yet.</p>
-          <Link href="/" className="btn btn-primary">Browse Products</Link>
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium">Your cart is empty</h3>
+          <p className="text-muted-foreground">Looks like you have not added anything yet.</p>
+          <Link href="/" className="Button mt-4 inline-block">
+            Browse Products
+          </Link>
         </div>
       ) : (
         <>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th style={{ textAlign: "right" }}>Price</th>
-                <th style={{ textAlign: "center" }}>Qty</th>
-                <th style={{ textAlign: "right" }}>Total</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-center">Qty</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-left">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((item) => (
-                <tr key={item.id}>
-                  <td>
+                <TableRow key={item.id}>
+                  <TableCell>
                     <Link href={`/products/${item.product.slug}`}>{item.product.name}</Link>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
+                  </TableCell>
+                  <TableCell className="text-right">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.product.price)}
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    <input
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Input
                       type="number"
                       min="1"
                       max={item.product.stock}
                       value={item.quantity}
                       onChange={(e) => updateItem(item.id, Math.max(1, Number(e.target.value) || 1))}
-                      style={{ width: 60, padding: "0.4rem" }}
+                      className="w-[60px] p-1 text-center"
                     />
-                  </td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.product.price * item.quantity)}
-                  </td>
-                  <td>
-                    <button
+                  </TableCell>
+                  <TableCell>
+                    <Button
                       onClick={() => removeItem(item.id)}
-                      className="btn btn-danger"
-                      style={{ padding: "0.35rem 0.8rem", fontSize: "0.85rem", color: "#fff" }}
+                      variant="destructive"
+                      size="sm"
                     >
                       Remove
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 1, marginTop: 1.5 }}>
-            <Link href="/" className="btn btn-outline">Continue shopping</Link>
-            <button
-              onClick={checkout}
-              className="btn btn-primary"
-              style={{ padding: "0.7rem 1.7rem", fontSize: 1.05 }}
-            >
+            </TableBody>
+          </Table>
+          <div className="flex justify-end gap-3 mt-6">
+            <Link href="/" className="Button variant-outline">Continue shopping</Link>
+            <Button onClick={checkout} className="w-auto">
               Checkout &rarr;
-            </button>
+            </Button>
           </div>
-          <p style={{ marginTop: 1, fontWeight: 700, textAlign: "right" }}>
+          <p className="mt-4 font-bold text-right">
             Total: {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(total)}
           </p>
         </>
       )}
     </div>
   )
+}
+
+function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`border border-input rounded-md p-1 text-center focus-visible:ring-2 focus-visible:ring-ring ${className}`} />
 }

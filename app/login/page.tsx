@@ -3,11 +3,19 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/use-toast"
+import { Card } from "@/components/ui/card"
+import { CardHeader } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
 
 export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -21,29 +29,47 @@ export default function LoginPage() {
     const data = await res.json()
     setLoading(false)
     if (res.ok) {
+      toast("Logged in successfully")
+      window.dispatchEvent(new Event("auth-changed"))
       router.push("/")
+      router.refresh()
     } else {
-      setError(data.error || "Login failed")
+      toast({ title: data.error || "Login failed", variant: "destructive" })
     }
   }
 
   return (
-    <div className="section" style={{ maxWidth: 420 }}>
-      <h1 style={{ fontSize: 1.5, fontWeight: 700, marginBottom: 1.5 }}>Login</h1>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit} className="card">
-        <div className="label">Email</div>
-        <input name="email" type="email" required className="input" placeholder="you@example.com" />
-        <div className="label">Password</div>
-        <input name="password" type="password" required className="input" placeholder="••••••••" />
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", padding: "0.75rem" }}>
-          {loading ? "Signing in..." : "Sign in"}
-        </button>
-        <p style={{ marginTop: 1, fontSize: "0.9rem", color: "#64748b" }}>
-          Don&apos;t have an account?{" "}
-          <Link href="/register" style={{ fontWeight: 600 }}>Register</Link>
-        </p>
-      </form>
+    <div className="mx-auto max-w-[420px] py-8">
+      <h1 className="text-xl font-bold text-foreground mb-6">Login</h1>
+      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+      <Card>
+        <CardHeader>
+          <CardTitle>Login</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input name="email" type="email" required placeholder="you@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Password</Label>
+              <Input name="password" type="password" required placeholder="••••••••" />
+            </div>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Signing in..." : "Sign in"}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="font-semibold text-primary hover:underline">Register</Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="block text-sm font-medium text-muted-foreground mb-1">{children}</label>
 }

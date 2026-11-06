@@ -1,6 +1,20 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { CardHeader } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
 
 interface Order {
   id: string
@@ -48,6 +62,23 @@ function generateReference() {
   return `TB-${Date.now().toString(36)}`
 }
 
+function badgeVariant(status: string) {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "secondary"
+    case "paid":
+      return "default"
+    case "shipped":
+      return "default"
+    case "delivered":
+      return "default"
+    case "cancelled":
+      return "destructive"
+    default:
+      return "outline"
+  }
+}
+
 export default function PaymentPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,7 +87,6 @@ export default function PaymentPage() {
   const [transactionNumber, setTransactionNumber] = useState("")
   const [shippingAddress, setShippingAddress] = useState("")
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
-  const eventSourceRef = useRef<EventSource | null>(null)
 
   async function loadOrders() {
     try {
@@ -103,51 +133,20 @@ export default function PaymentPage() {
       if (!cancelled) setLoading(false)
     }
     init()
-
-    const es = new EventSource("/api/events")
-    eventSourceRef.current = es
-
-    es.addEventListener("payment_completed", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("order_updated", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("shipping_updated", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
     return () => {
       cancelled = true
-      es.close()
-      eventSourceRef.current = null
     }
   }, [])
 
   if (loading) {
     return (
-      <div className="section" style={{ maxWidth: 900 }}>
-        <div className="card" style={{ padding: "3rem 1rem", textAlign: "center" }}>
-          <div className="skeleton skeleton-image" style={{ margin: "0 auto" }}></div>
-          <div className="skeleton skeleton-title" style={{ width: "30%" }}></div>
-        </div>
+      <div className="mx-auto max-w-[900px] py-8">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="animate-pulse bg-secondary rounded h-24 w-24 mx-auto mb-4"></div>
+            <div className="animate-pulse bg-secondary rounded h-4 w-[30%] mx-auto"></div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -157,185 +156,166 @@ export default function PaymentPage() {
   const deliveredOrders = orders.filter((o) => o.shippingStatus === "DELIVERED")
 
   return (
-    <div className="section" style={{ maxWidth: 1000 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1.5 }}>
+    <div className="mx-auto max-w-[1000px] py-8">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="page-title" style={{ margin: 0 }}>Payment &amp; Shipping</h1>
-          <p className="muted" style={{ marginBottom: 0 }}>Manage your orders, payments, and deliveries.</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Payment &amp; Shipping</h1>
+          <p className="text-muted-foreground">Manage your orders, payments, and deliveries.</p>
         </div>
       </div>
 
       {message.text && (
-        <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>
+        <p className={`mb-4 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>{message.text}</p>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "2rem" }}>
+      <div className="grid grid-cols-[1fr_380px] gap-8">
         <div>
-          <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Pending Orders</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Pending Orders</h2>
           {pendingOrders.length === 0 ? (
-            <div className="empty-state fade-in">
-              <h3>No pending orders</h3>
-              <p>All caught up — no payments waiting.</p>
+            <div className="text-center py-8">
+              <h3 className="text-lg font-medium">No pending orders</h3>
+              <p className="text-muted-foreground">All caught up — no payments waiting.</p>
             </div>
           ) : (
             pendingOrders.map((order) => {
               const deepLink = buildTelebirrDeepLink(order.orderNumber, order.total, phone)
               return (
-                <div key={order.id} className="card slide-in" style={{ marginBottom: 1.5 }}>
-                  <div style={{ padding: "1.25rem 1.25rem 1rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 0.75 }}>
+                <Card key={order.id} className="mb-6">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h3 style={{ margin: 0, fontSize: 1.1, fontWeight: 700 }}>{order.orderNumber}</h3>
-                        <p style={{ margin: 0.25, fontSize: "0.9rem", color: "#64748b" }}>
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </p>
+                        <h3 className="text-lg font-bold text-foreground">{order.orderNumber}</h3>
+                        <p className="text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
-                      <span className="badge badge-pending">PENDING</span>
+                      <Badge variant={badgeVariant(order.status)}>{order.status}</Badge>
                     </div>
-                    <table className="table" style={{ marginBottom: 1, fontSize: "0.9rem" }}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: "50%" }}>Product</th>
-                          <th style={{ width: "20%", textAlign: "right" }}>Price</th>
-                          <th style={{ width: "15%", textAlign: "center" }}>Qty</th>
-                          <th style={{ width: "15%", textAlign: "right" }}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-right">Price</TableHead>
+                          <TableHead className="text-center">Qty</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {order.items.map((item) => (
-                          <tr key={item.id}>
-                            <td>{item.product}</td>
-                            <td style={{ textAlign: "right" }}>
+                          <TableRow key={item.id}>
+                            <TableCell>{item.product}</TableCell>
+                            <TableCell className="text-right">
                               {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.price)}
-                            </td>
-                            <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                            <td style={{ textAlign: "right" }}>
+                            </TableCell>
+                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-right">
                               {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.price * item.quantity)}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1 }}>
-                      <span style={{ fontWeight: 700, fontSize: 1.1, color: "#1e293b" }}>
+                      </TableBody>
+                    </Table>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-bold text-lg text-foreground">
                         Total: {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(order.total)}
                       </span>
                     </div>
 
-                    <div style={{ marginBottom: 0.75 }}>
-                      <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 0.4 }}>
-                        Step 1: Open Telebirr App
-                      </label>
-                      <div style={{ display: "flex", gap: 0.75, marginBottom: 0.75 }}>
+                    <div className="mb-3">
+                      <Label>Step 1: Open Telebirr App</Label>
+                      <div className="flex gap-3 mb-3">
                         <a
                           href={deepLink.scheme}
-                          className="btn btn-primary"
-                          style={{ flex: 1, padding: "0.6rem 1rem", textAlign: "center" }}
+                          className="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary/700 flex-1 text-center"
                           rel="noopener noreferrer"
                         >
                           Open Telebirr App
                         </a>
                         <a
                           href={deepLink.url}
-                          className="btn btn-outline"
-                          style={{ flex: 1, padding: "0.6rem 1rem", textAlign: "center" }}
+                          className="border border-input text-muted-foreground px-4 py-2 rounded-md text-sm hover:bg-secondary flex-1 text-center"
                           rel="noopener noreferrer"
                         >
                           Open in Browser
                         </a>
                       </div>
-                      <p className="muted" style={{ fontSize: "0.85rem", marginBottom: 0.75 }}>
-                        Pay {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(order.total)} via
-                        Telebirr mobile money.
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Pay {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(order.total)} via Telebirr mobile money.
                       </p>
 
-                      <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 0.4 }}>
-                        Step 2: Enter Payment Details
-                      </label>
-                      <div style={{ display: "flex", gap: 0.75, marginBottom: 0.75 }}>
-                        <input
+                      <Label>Step 2: Enter Payment Details</Label>
+                      <div className="flex gap-3 mb-3">
+                        <Input
                           name="phoneNumber"
                           type="tel"
                           required
-                          className="input"
                           placeholder="Telebirr phone"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          style={{ flex: 1 }}
+                          className="flex-1"
                         />
-                        <input
+                        <Input
                           name="transactionNumber"
                           type="text"
                           required
-                          className="input"
                           placeholder="Transaction number"
                           value={transactionNumber}
                           onChange={(e) => setTransactionNumber(e.target.value)}
-                          style={{ flex: 1 }}
+                          className="flex-1"
                         />
                       </div>
-                      <button
+                      <Button
                         onClick={() => completePayment(order.orderNumber, phone, transactionNumber)}
                         disabled={payingOrder === order.id || !phone || !transactionNumber}
-                        className="btn btn-primary"
-                        style={{ width: "100%" }}
                       >
                         {payingOrder === order.id ? "Processing…" : "Confirm Payment"}
-                      </button>
-                      <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0.5 }}>
+                      </Button>
+                      <p className={`mt-2 text-sm text-muted-foreground`}>
                         Enter your Telebirr phone number and the transaction number received after paying.
                       </p>
                     </div>
                   </div>
-                </div>
+                </Card>
               )
             })
           )}
         </div>
 
-        <div className="summary-card">
-          <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Paid Orders - Shipping</h2>
+        <div className="bg-card border border-input rounded-lg p-6 shadow">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Paid Orders - Shipping</h2>
           {paidOrders.length === 0 ? (
-            <p className="muted">No paid orders awaiting shipping.</p>
+            <p className="text-muted-foreground">No paid orders awaiting shipping.</p>
           ) : (
             paidOrders.map((order) => (
-              <div key={order.id} className="card slide-in" style={{ marginBottom: 1.5 }}>
-                <div style={{ padding: "1.25rem 1.25rem 1rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 0.75 }}>
+              <Card key={order.id} className="mb-6">
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 style={{ margin: 0, fontSize: 1.1, fontWeight: 700 }}>{order.orderNumber}</h3>
-                      <p style={{ margin: 0.25, fontSize: "0.9rem", color: "#64748b" }}>
-                        {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(order.total)}
+                      <h3 className="text-lg font-bold text-foreground">{order.orderNumber}</h3>
+                      <p className="text-muted-foreground">
+                        Paid: {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(order.total)}
                       </p>
                     </div>
-                    <span className={`badge badge-${order.shippingStatus.toLowerCase()}`}>
-                      {order.shippingStatus}
-                    </span>
+                    <Badge variant={badgeVariant(order.shippingStatus)}>{order.shippingStatus}</Badge>
                   </div>
 
                   {order.shippingStatus === "PENDING" && (
-                    <div style={{ marginBottom: 0.75 }}>
-                      <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 0.4 }}>
-                        Shipping Address
-                      </label>
-                      <input
+                    <div className="mb-3">
+                      <Label>Shipping Address</Label>
+                      <Input
                         name="shippingAddress"
                         type="text"
                         required
-                        className="input"
                         placeholder="e.g. Addis Ababa, Bole Sub-city, Kebele 01, House 123"
                         value={shippingAddress}
                         onChange={(e) => setShippingAddress(e.target.value)}
                       />
-                      <p className="muted" style={{ fontSize: "0.85rem", marginBottom: 0.75 }}>
+                      <p className="text-sm text-muted-foreground mt-1">
                         Provide your delivery address so we can ship your items.
                       </p>
                     </div>
                   )}
 
                   {order.shippingMethod === "REMOTE" && order.shippingStatus !== "DELIVERED" && (
-                    <div style={{ display: "flex", gap: 0.75 }}>
-                      <button
+                    <div className="flex gap-3">
+                      <Button
                         onClick={() => {
                           if (!shippingAddress) {
                             setMessage({ text: "Please enter a shipping address", type: "error" })
@@ -343,67 +323,64 @@ export default function PaymentPage() {
                           }
                           setMessage({ text: "", type: "success" })
                         }}
-                        className="btn btn-primary"
                         disabled={!shippingAddress}
                       >
                         Mark as Shipped
-                      </button>
-                      <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0.5 }}>
+                      </Button>
+                      <p className="text-sm text-muted-foreground">
                         Shipping address required for remote delivery.
                       </p>
                     </div>
                   )}
 
                   {order.shippingStatus === "SHIPPED" && (
-                    <p style={{ fontSize: "0.9rem", color: "#1e3a8a", fontWeight: 600, marginBottom: 0 }}>
+                    <p className="text-blue-700 font-semibold mb-0">
                       Your order has been shipped and is on the way.
                     </p>
                   )}
                   {order.shippingStatus === "DELIVERED" && (
-                    <p style={{ fontSize: "0.9rem", color: "#15803d", fontWeight: 600, marginBottom: 0 }}>
+                    <p className="text-green-700 font-semibold mb-0">
                       Your order has been delivered. Thank you!
                     </p>
                   )}
                 </div>
-              </div>
+              </Card>
             ))
           )}
         </div>
       </div>
 
       {deliveredOrders.length > 0 && (
-        <div style={{ marginTop: 2 }}>
-          <h2 style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1 }}>Delivered Orders</h2>
-          <table className="table" style={{ marginBottom: 1.5 }}>
-            <thead>
-              <tr>
-                <th style={{ width: "30%" }}>Order #</th>
-                <th style={{ width: "20%", textAlign: "right" }}>Total</th>
-                <th style={{ width: "25%" }}>Payment</th>
-                <th>Shipping</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Delivered Orders</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-3/10">Order #</TableHead>
+                <TableHead className="w-1/5 text-right">Total</TableHead>
+                <TableHead className="w-1/4">Payment</TableHead>
+                <TableHead>Shipping</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {deliveredOrders.map((o) => (
-                <tr key={o.id} style={{ fontSize: "0.9rem" }}>
-                  <td style={{ fontWeight: 600 }}>{o.orderNumber}</td>
-                  <td style={{ textAlign: "right" }}>
+                <TableRow key={o.id} className="text-sm">
+                  <TableCell className="font-medium">{o.orderNumber}</TableCell>
+                  <TableCell className="text-right">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(o.total)}
-                  </td>
-                  <td>
-                    <span className={`badge badge-${o.payment?.status?.toLowerCase() ?? "pending"}`}>
-                      {o.payment?.status ?? "—"}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge badge-${o.shippingStatus.toLowerCase()}`}>
-                      {o.shippingStatus}
-                    </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={badgeVariant(o.payment?.status?.toLowerCase() ?? "pending")}>
+                      {o.payment?.status ?? "&mdash;"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={badgeVariant(o.shippingStatus)}>{o.shippingStatus}</Badge>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { apiError, apiJson } from "@/lib/api"
+import { broadcastEvent } from "@/lib/events"
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me"
 
@@ -48,6 +49,17 @@ export async function POST(req: Request) {
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
+  })
+
+  broadcastEvent({
+    type: "auth_login",
+    data: {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      redirectTo: "/",
+    },
+    timestamp: new Date().toISOString(),
   })
 
   return apiJson({ success: true, user })

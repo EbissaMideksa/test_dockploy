@@ -1,8 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
+import { CardHeader } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
 
 interface Category {
   id: string
@@ -14,9 +21,26 @@ interface Category {
 export default function AdminCategoryEditPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
+  const router = useRouter()
   const [category, setCategory] = useState<Category | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/admin/categories`, { cache: "no-store" })
+        if (res.ok) {
+          const data = await res.json()
+          const cat = data.find((c: Category) => c.id === id)
+          setCategory(cat ?? null)
+        }
+      } catch {
+        setMessage({ text: "Failed to load category", type: "error" })
+      }
+      setLoading(false)
+    })()
+  }, [id])
 
   async function updateCategory(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -29,7 +53,7 @@ export default function AdminCategoryEditPage() {
     if (res.ok) {
       setMessage({ text: "Category updated", type: "success" })
       setTimeout(() => {
-        window.location.href = "/admin/categories"
+        router.push("/admin/categories")
       }, 800)
     } else {
       setMessage({ text: "Failed to update category", type: "error" })
@@ -45,75 +69,38 @@ export default function AdminCategoryEditPage() {
       body: fd,
     })
     if (res.ok) {
-      window.location.href = "/admin/categories"
+      router.push("/admin/categories")
     } else {
       setMessage({ text: "Failed to delete category", type: "error" })
     }
   }
 
-  useEffect(() => {
-    let cancelled = false
-    async function fetchData() {
-      if (!id) return
-      try {
-        const res = await fetch(`/api/admin/categories`, { cache: "no-store" })
-        const data = await res.json()
-        const cat = data.find((c: Category) => c.id === id)
-        if (!cancelled) setCategory(cat ?? null)
-      } catch {
-        if (!cancelled) setMessage({ text: "Failed to load category", type: "error" })
-      }
-      if (!cancelled) setLoading(false)
-    }
-    fetchData()
-    return () => {
-      cancelled = true
-    }
-  }, [id])
-
   if (loading) return <p>Loading...</p>
   if (!category) return <p>Category not found.</p>
 
   return (
-    <div className="section" style={{ maxWidth: 700 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1.5 }}>
-        <h1 style={{ fontSize: 1.75, fontWeight: 700, margin: 0 }}>Edit Category</h1>
-        <Link href="/admin/categories" className="btn btn-outline">
-          Back
-        </Link>
+    <div className="mx-auto max-w-[700px] py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Edit Category</h1>
+        <Button variant="outline" asChild>
+          <Link href="/admin"><ArrowLeft className="h-4 w-4" />Dashboard</Link>
+        </Button>
       </div>
-      {message.text && <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>}
-      <form onSubmit={updateCategory} className="card" style={{ marginBottom: 1.5, display: "flex", gap: 0.75 }}>
-        <input
-          name="name"
-          required
-          className="input"
-          placeholder="Category name"
-          defaultValue={category.name}
-          style={{ width: 100 }}
-        />
-        <input
-          name="slug"
-          className="input"
-          placeholder="slug"
-          defaultValue={category.slug}
-          style={{ width: 180 }}
-        />
-        <input
-          name="imageUrl"
-          className="input"
-          placeholder="image URL"
-          defaultValue={category.imageUrl ?? ""}
-          style={{ width: 220 }}
-        />
-        <button type="submit" className="btn btn-primary">
-          Update Category
-        </button>
-      </form>
-      <form onSubmit={(e) => { e.preventDefault(); deleteCategory() }} style={{ display: "inline" }}>
-        <button type="submit" className="btn btn-danger" style={{ color: "#fff" }}>
-          Delete Category
-        </button>
+      {message.text && (
+        <p className={`mb-4 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>{message.text}</p>
+      )}
+      <Card>
+        <CardContent className="p-6">
+          <form onSubmit={updateCategory} className="flex gap-3">
+            <Input name="name" required className="w-full flex-1" placeholder="Category name" defaultValue={category.name} />
+            <Input name="slug" className="w-[180px]" placeholder="slug" defaultValue={category.slug} />
+            <Input name="imageUrl" className="w-[220px]" placeholder="image URL" defaultValue={category.imageUrl ?? ""} />
+            <Button type="submit">Update Category</Button>
+          </form>
+        </CardContent>
+      </Card>
+      <form onSubmit={(e) => { e.preventDefault(); deleteCategory() }} className="mt-4 inline">
+        <Button variant="destructive" type="submit">Delete Category</Button>
       </form>
     </div>
   )

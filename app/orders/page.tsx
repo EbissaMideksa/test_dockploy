@@ -2,6 +2,14 @@
 
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 
 interface Order {
   id: string
@@ -13,16 +21,15 @@ interface Order {
   items: Array<{ id: string; product: { name: string }; quantity: number; price: number }>
 }
 
-function formatDateTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
+function badgeVariant(status: string) {
+  switch (status.toLowerCase()) {
+    case "pending": return "secondary"
+    case "paid": return "default"
+    case "shipped": return "default"
+    case "delivered": return "default"
+    case "cancelled": return "destructive"
+    default: return "outline"
+  }
 }
 
 export default function OrdersPage() {
@@ -51,41 +58,10 @@ export default function OrdersPage() {
     const es = new EventSource("/api/events")
     eventSourceRef.current = es
 
-    es.addEventListener("order_created", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("order_updated", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("payment_completed", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
-
-    es.addEventListener("shipping_updated", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        loadOrders()
-      } catch {
-        loadOrders()
-      }
-    })
+    es.addEventListener("order_created", () => { loadOrders() })
+    es.addEventListener("order_updated", () => { loadOrders() })
+    es.addEventListener("payment_completed", () => { loadOrders() })
+    es.addEventListener("shipping_updated", () => { loadOrders() })
 
     return () => {
       es.close()
@@ -95,66 +71,68 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="section">
-        <h1 style={{ fontSize: 1.75, fontWeight: 700, marginBottom: 1 }}>My Orders</h1>
-        <div className="card" style={{ padding: "2rem", textAlign: "center" }}>
-          <div className="skeleton skeleton-text" style={{ width: "60%" }}></div>
-          <div className="skeleton skeleton-text" style={{ width: "40%" }}></div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-foreground mb-6">My Orders</h1>
+        <div className="bg-secondary rounded-lg p-8 text-center">
+          <div className="animate-pulse bg-muted rounded h-6 w-[60%] mx-auto mb-2"></div>
+          <div className="animate-pulse bg-muted rounded h-6 w-[40%] mx-auto"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="section">
-      <h1 style={{ fontSize: 1.75, fontWeight: 700, marginBottom: 1 }}>My Orders</h1>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-foreground mb-6">My Orders</h1>
       {orders.length === 0 ? (
-        <div className="empty-state fade-in">
-          <h3>No orders yet.</h3>
-          <p>Start shopping to see your orders here.</p>
-          <Link href="/" className="btn btn-primary">Browse Products</Link>
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium">No orders yet.</h3>
+          <p className="text-muted-foreground">Start shopping to see your orders here.</p>
+          <Button asChild>
+            <Link href="/" className="block">Browse Products</Link>
+          </Button>
         </div>
       ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Order #</th>
-              <th>Status</th>
-              <th>Payment</th>
-              <th style={{ textAlign: "right" }}>Total</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order #</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {orders.map((o) => (
-              <tr key={o.id}>
-                <td>
-                  <Link href={`/orders/${o.id}`} style={{ fontWeight: 600, color: "#0f172a" }}>
+              <TableRow key={o.id}>
+                <TableCell>
+                  <Link href={`/orders/${o.id}`} className="font-medium text-foreground hover:text-primary">
                     {o.orderNumber}
                   </Link>
-                </td>
-                <td>
-                  <span className={`badge badge-${o.status.toLowerCase()}`}>{o.status}</span>
-                </td>
-                <td>
-                  <span className={`badge badge-${o.payment?.status?.toLowerCase() ?? "pending"}`}>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={badgeVariant(o.status)}>{o.status}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={badgeVariant(o.payment?.status?.toLowerCase() ?? "pending")}>
                     {o.payment?.status ?? "—"}
-                  </span>
-                </td>
-                <td style={{ textAlign: "right" }}>
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
                   {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(o.total))}
-                </td>
-                <td>{formatDateTime(o.createdAt)}</td>
-                <td>
-                  <Link href={`/orders/${o.id}`} className="btn btn-outline btn-sm" style={{ padding: "0.35rem 0.8rem" }}>
-                    View
-                  </Link>
-                </td>
-              </tr>
+                </TableCell>
+                <TableCell>{new Date(o.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/orders/${o.id}`}>View</Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </div>
   )

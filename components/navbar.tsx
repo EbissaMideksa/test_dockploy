@@ -1,10 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import { useEffect, useState, useRef } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface NavbarProps {
-  user: { id: string; email: string; role: string } | null
+  user: { id: string; name: string; email: string; role: string } | null
 }
 
 export default function Navbar({ user }: NavbarProps) {
@@ -12,113 +15,150 @@ export default function Navbar({ user }: NavbarProps) {
   const [sseConnected, setSseConnected] = useState(false)
   const eventSourceRef = useRef<EventSource | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { toast } = useToast()
+  const router = useRouter()
 
-  async function fetchCartCount() {
+  async function handleLogout(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     try {
-      const res = await fetch("/api/cart/count", { cache: "no-store" })
+      const res = await fetch("/api/auth/logout", { method: "POST" })
       if (res.ok) {
-        const data = await res.json()
-        setCartCount(data.count ?? 0)
+        toast("Logged out successfully")
+        window.dispatchEvent(new Event("auth-changed"))
+        router.push("/login")
+        router.refresh()
+      } else {
+        toast({ title: "Logout failed", variant: "destructive" })
       }
     } catch {
-      // ignore
+      toast({ title: "Logout failed", variant: "destructive" })
     }
   }
 
   useEffect(() => {
-    ;(async () => {
-      await fetchCartCount()
-    })()
+    if (!user) return
+
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const res = await fetch("/api/cart/count", { cache: "no-store" })
+        if (!cancelled && res.ok) {
+          const data = await res.json()
+          setCartCount(data.count ?? 0)
+        }
+      } catch {
+        // ignore
+      }
+    }
+    void load()
 
     const es = new EventSource("/api/events")
     eventSourceRef.current = es
 
     es.onopen = () => {
-      setSseConnected(true)
+      if (!cancelled) setSseConnected(true)
     }
 
     es.onerror = () => {
-      setSseConnected(false)
-      // Don't close - EventSource auto-reconnects
+      if (!cancelled) setSseConnected(false)
     }
 
-    es.addEventListener("cart_updated", async () => {
-      await fetchCartCount()
+    es.addEventListener("cart_updated", () => {
+      void load()
     })
 
-    es.addEventListener("order_created", async () => {
-      await fetchCartCount()
-    })
-
-    es.addEventListener("auth_login", () => {
-      window.location.href = "/"
+    es.addEventListener("order_created", () => {
+      void load()
     })
 
     es.addEventListener("auth_logout", () => {
-      window.location.href = "/login"
+      window.dispatchEvent(new Event("auth-changed"))
+      router.push("/login")
+      router.refresh()
     })
 
-    // Fallback: poll every 1 second if SSE is not connected
-    pollRef.current = setInterval(async () => {
-      if (!sseConnected) {
-        await fetchCartCount()
+    pollRef.current = setInterval(() => {
+      if (es.readyState !== EventSource.OPEN) {
+        void load()
       }
-    }, 1000)
+    }, 5000)
 
     return () => {
+      cancelled = true
       es.close()
-      eventSourceRef.current = null
+      if (eventSourceRef.current === es) eventSourceRef.current = null
       if (pollRef.current) clearInterval(pollRef.current)
+      pollRef.current = null
+      setSseConnected(false)
     }
-  }, [])
+  }, [user, router])
 
-  const authLinks = user ? (
-    <>
-      <form action="/api/auth/logout" method="POST" style={{ display: "inline" }}>
-        <button type="submit" className="btn btn-outline btn-sm" style={{ padding: "0.4rem 0.9rem", fontSize: "0.85rem" }}>
-          Logout ({user.email})
-        </button>
-      </form>
-      {user.role === "ADMIN" && (
-        <Link href="/admin" className="btn btn-primary btn-sm" style={{ padding: "0.4rem 0.9rem", fontSize: "0.85rem" }}>
-          Admin
-        </Link>
-      )}
-    </>
-  ) : (
-    <>
-      <Link href="/login" className="btn btn-outline btn-sm" style={{ padding: "0.4rem 0.9rem", fontSize: "0.85rem" }}>
-        Login
-      </Link>
-      <Link href="/register" className="btn btn-primary btn-sm" style={{ padding: "0.4rem 0.9rem", fontSize: "0.85rem" }}>
-        Register
-      </Link>
-    </>
-  )
+  const adminLink = user?.role === "ADMIN" ? (
+    <Link href="/admin" className="bg-primary text-white px-3 py-1 text-sm rounded-md hover:bg-primary/700">
+      Admin
+    </Link>
+  ) : null
+
+  const liveStatus = sseConnected ? "● Live" : "● Polling"
+  const liveClass = sseConnected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+  const visibleCartCount = user ? cartCount : 0
 
   return (
-    <nav className="navbar">
-      <Link href="/" className="navbar-brand">Dokploy Shop</Link>
-      <ul className="navbar-links">
-        <li><Link href="/">Home</Link></li>
-        <li><Link href="/cart">Cart ({cartCount})</Link></li>
-        <li><Link href="/orders">My Orders</Link></li>
-        <li>{authLinks}</li>
-        <li>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              padding: "0.2rem 0.5rem",
-              borderRadius: "4px",
-              background: sseConnected ? "#d1fae5" : "#fef2f2",
-              color: sseConnected ? "#065f46" : "#991b1b",
-              marginLeft: "0.5rem",
-            }}
-          >
-            {sseConnected ? "● Live" : "● Polling"}
-          </span>
-        </li>
-      </ul>
+    <nav className="bg-white border-b border-border sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-3">
+        <Link href="/" className="text-xl font-bold text-foreground flex items-center gap-2">
+          <span className="text-primary">D</span>okploy Shop
+        </Link>
+        <ul className="hidden md:flex gap-3 items-center">
+          {user ? (
+            <>
+              <li><Link href="/" className="text-muted-foreground hover:text-primary hover:underline transition-colors">Home</Link></li>
+              <li><Link href="/cart" className="text-muted-foreground hover:text-primary hover:underline transition-colors">Cart ({visibleCartCount})</Link></li>
+              <li><Link href="/orders" className="text-muted-foreground hover:text-primary hover:underline transition-colors">My Orders</Link></li>
+            </>
+          ) : null}
+          <li>
+            {user ? (
+              <>
+                <span className="text-sm text-muted-foreground mr-3">
+                  {user.name}
+                </span>
+                <div className="inline-flex items-center gap-2">
+                  <form action="/api/auth/logout" method="POST" onSubmit={handleLogout} className="inline">
+                    <Button variant="outline" size="sm" type="submit">
+                      Logout
+                    </Button>
+                  </form>
+                  {adminLink}
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="border border-input text-muted-foreground px-3 py-1 text-sm rounded-md hover:bg-secondary"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="bg-primary text-white px-3 py-1 text-sm rounded-md hover:bg-primary/700"
+                >
+                  Register
+                </Link>
+              </>
+            )}
+          </li>
+          {user ? (
+            <li>
+              <span className={`text-xs px-2 py-0.5 rounded-md ml-2 ${liveClass}`}>
+                {liveStatus}
+              </span>
+            </li>
+          ) : null}
+        </ul>
+      </div>
     </nav>
   )
 }

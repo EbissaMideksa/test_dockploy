@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface ImageUploadProps {
   value: string
@@ -39,36 +41,32 @@ export default function ImageUpload({ value, onChange, accept = "image/*" }: Ima
       alert("Upload failed")
     } finally {
       setUploading(false)
-      e.target.value = ""
+      ;(e.target as HTMLInputElement).value = ""
     }
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0.75, marginBottom: 0.75 }}>
-      <input
-        type="file"
-        accept={accept}
-        onChange={handleFileSelect}
-        className="input"
-        style={{ flex: 1, padding: "0.5rem", color: "#0f172a" }}
-        disabled={uploading}
-      />
-      <button
-        type="button"
-        disabled={uploading}
-        className="btn btn-primary"
-        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#fff" }}
-      >
+    <div className="flex items-center gap-3 mb-3">
+      <label className="flex-1 p-2 text-sm border border-input rounded-md focus-within:ring-2 focus-within:ring-ring cursor-pointer">
+        <input
+          type="file"
+          accept={accept}
+          onChange={handleFileSelect}
+          className="w-0 h-0 opacity-0 overflow-hidden absolute"
+        />
+        {value ? value.split("/").pop() : "Choose image"}
+      </label>
+      <Button disabled={uploading}>
         {uploading ? "Uploading…" : "Upload Image"}
-      </button>
+      </Button>
       {value && (
-        <div style={{ display: "flex", alignItems: "center", gap: 0.5, marginLeft: 0.75 }}>
+        <div className="flex items-center gap-2 ml-3">
           <img
             src={value}
             alt="preview"
-            style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }}
+            className="w-10 h-10 object-cover rounded-md"
           />
-          <span style={{ fontSize: "0.8rem", color: "#64748b", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className="text-sm text-muted-foreground truncate max-w-[150px]">
             {value.split("/").pop()}
           </span>
         </div>

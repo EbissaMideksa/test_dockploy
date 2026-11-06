@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server"
 import { registerClient } from "@/lib/events"
+import { getApiUser } from "@/lib/api"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 export async function GET() {
+  const user = await getApiUser()
+  if (!user) {
+    return new NextResponse("Unauthenticated", { status: 401 })
+  }
+
   return new NextResponse(new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder()

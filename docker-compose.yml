@@ -28,20 +28,22 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      UPLOAD_DIR: ${UPLOAD_DIR:-./uploads}
+      UPLOAD_DIR: /app/uploads
     volumes:
-      - ./uploads:/app/uploads
+      - app_uploads:/app/uploads
 
   nginx:
     image: nginx:alpine
     depends_on:
       app:
         condition: service_started
+    restart: unless-stopped
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./uploads:/usr/share/nginx/html/uploads:ro
+      - app_uploads:/usr/share/nginx/html/uploads:ro
     ports:
-      - "80:80"
+      - "8080:80"
 
 volumes:
   postgres_data:
+  app_uploads:

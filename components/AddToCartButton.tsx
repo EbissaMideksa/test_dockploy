@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface AddToCartButtonProps {
   productId: string
@@ -33,40 +35,32 @@ export default function AddToCartButton({
     if (res.ok) {
       setMessage({ text: "Added to cart", type: "success" })
       setTimeout(() => setMessage({ text: "", type: "success" }), 2000)
+    } else if (res.status === 401) {
+      window.location.href = "/login"
     } else {
       setMessage({ text: data.error || "Failed to add to cart", type: "error" })
     }
   }
 
   return (
-    <form onSubmit={handleAdd} style={{ display: "flex", gap: 0.75, alignItems: "center", flexWrap: "wrap" }}>
-      <input
+    <form onSubmit={handleAdd} className="flex gap-3 items-center flex-wrap">
+      <Input
         name="quantity"
         type="number"
         min="1"
         max={stock}
         value={quantity}
         onChange={(e) => setQuantity(Math.max(1, Math.min(stock, Number(e.target.value) || 1)))}
-        style={{ width: 80, padding: "0.5rem", border: "1px solid #cbd5e1", borderRadius: 6 }}
+        className="w-20 p-1 text-center"
       />
-      <button
+      <Button
         type="submit"
         disabled={loading || stock === 0}
-        className="btn btn-primary"
-        style={{ padding: "0.6rem 1.4rem", fontSize: "0.9rem" }}
       >
         {stock === 0 ? "Out of stock" : loading ? "Adding…" : "Add to Cart"}
-      </button>
+      </Button>
       {message.text && (
-        <span
-          style={{
-            marginLeft: 0.75,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            color: message.type === "error" ? "#dc2626" : "#059669",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <span className={`ml-3 text-xs font-semibold whitespace-nowrap ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>
           {message.text}
         </span>
       )}

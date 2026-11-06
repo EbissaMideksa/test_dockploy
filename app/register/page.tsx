@@ -3,11 +3,19 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/use-toast"
+import { Card } from "@/components/ui/card"
+import { CardHeader } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
 
 export default function RegisterPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -27,33 +35,55 @@ export default function RegisterPage() {
     const data = await res.json()
     setLoading(false)
     if (res.ok) {
+      toast("Account created successfully")
+      window.dispatchEvent(new Event("auth-changed"))
       router.push("/")
+      router.refresh()
     } else {
-      setError(data.error || "Registration failed")
+      toast({ title: data.error || "Registration failed", variant: "destructive" })
     }
   }
 
   return (
-    <div className="section" style={{ maxWidth: 420 }}>
-      <h1 style={{ fontSize: 1.5, fontWeight: 700, marginBottom: 1.5 }}>Register</h1>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit} className="card">
-        <div className="label">Full name</div>
-        <input name="name" type="text" className="input" placeholder="Your name" />
-        <div className="label">Email</div>
-        <input name="email" type="email" required className="input" placeholder="you@example.com" />
-        <div className="label">Password</div>
-        <input name="password" type="password" required className="input" placeholder="••••••••" />
-        <div className="label">Confirm password</div>
-        <input name="confirmPassword" type="password" required className="input" placeholder="••••••••" />
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", padding: "0.75rem" }}>
-          {loading ? "Creating account..." : "Create account"}
-        </button>
-        <p style={{ marginTop: 1, fontSize: "0.9rem", color: "#64748b" }}>
-          Already have an account?{" "}
-          <Link href="/login" style={{ fontWeight: 600 }}>Log in</Link>
-        </p>
-      </form>
+    <div className="mx-auto max-w-[420px] py-8">
+      <h1 className="text-xl font-bold text-foreground mb-6">Register</h1>
+      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+      <Card>
+        <CardHeader>
+          <CardTitle>Register</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Full name</Label>
+              <Input name="name" type="text" placeholder="Your name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input name="email" type="email" required placeholder="you@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Password</Label>
+              <Input name="password" type="password" required placeholder="••••••••" />
+            </div>
+            <div className="space-y-2">
+              <Label>Confirm password</Label>
+              <Input name="confirmPassword" type="password" required placeholder="••••••••" />
+            </div>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Creating account..." : "Create account"}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link href="/login" className="font-semibold text-primary hover:underline">Log in</Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="block text-sm font-medium text-muted-foreground mb-1">{children}</label>
 }

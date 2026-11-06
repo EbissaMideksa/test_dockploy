@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface PayButtonProps {
   orderNumber: string
@@ -22,12 +25,13 @@ export default function PayButton({ orderNumber }: PayButtonProps) {
         reference: `TB-${Date.now().toString(36)}`,
         status: "completed",
         phoneNumber: phone || undefined,
+        transactionNumber: `TB-${Date.now().toString(36)}`,
       }),
     })
     const data = await res.json()
     setPaying(false)
     if (res.ok) {
-      setMessage({ text: "Payment completed successfully!", type: "success" })
+      setMessage({ text: `Payment completed for order ${orderNumber}.`, type: "success" })
       setTimeout(() => window.location.reload(), 800)
     } else {
       setMessage({ text: data.error || "Payment failed", type: "error" })
@@ -35,29 +39,20 @@ export default function PayButton({ orderNumber }: PayButtonProps) {
   }
 
   return (
-    <div style={{ marginTop: 1 }}>
-      <label style={{ display: "block", fontSize: "0.85rem", color: "#334155", marginBottom: 0.4 }}>
-        Telebirr phone number
-      </label>
-      <input
+    <div className="mt-4">
+      <Label>Telebirr phone number</Label>
+      <Input
         type="tel"
         required
-        className="input"
         placeholder="e.g. 0912345678"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        style={{ marginBottom: 0.5 }}
       />
-      <button
-        onClick={completePayment}
-        disabled={paying || !phone}
-        className="btn btn-primary"
-        style={{ width: "100%", padding: "0.6rem" }}
-      >
+      <Button onClick={completePayment} disabled={paying || !phone} className="w-full">
         {paying ? "Paying…" : "Pay via Telebirr"}
-      </button>
+      </Button>
       {message.text && (
-        <p className={message.type === "error" ? "error" : "success"} style={{ marginTop: 0.75 }}>
+        <p className={`mt-3 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>
           {message.text}
         </p>
       )}

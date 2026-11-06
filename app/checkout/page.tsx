@@ -2,6 +2,19 @@
 
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { CardHeader } from "@/components/ui/card"
+import { CardTitle } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
+import { Table } from "@/components/ui/table"
+import { TableBody } from "@/components/ui/table"
+import { TableCell } from "@/components/ui/table"
+import { TableHead } from "@/components/ui/table"
+import { TableHeader } from "@/components/ui/table"
+import { TableRow } from "@/components/ui/table"
+import { Label } from "@/components/ui/label"
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState({ items: [] as Array<{ id: string; product: { name: string; price: number }; quantity: number }>, total: 0 })
@@ -103,143 +116,144 @@ export default function CheckoutPage() {
 
   if (loading) {
     return (
-      <div className="section" style={{ maxWidth: 700 }}>
-        <div className="card" style={{ padding: "3rem 1rem", textAlign: "center" }}>
-          <div className="skeleton skeleton-image"></div>
-          <div className="skeleton skeleton-title" style={{ width: "40%" }}></div>
-          <div className="skeleton skeleton-text" style={{ width: "60%" }}></div>
-        </div>
+      <div className="mx-auto max-w-[700px] py-8">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="animate-pulse bg-secondary rounded h-24 w-24 mx-auto mb-4"></div>
+            <div className="animate-pulse bg-secondary rounded h-4 w-[40%] mx-auto mb-2"></div>
+            <div className="animate-pulse bg-secondary rounded h-6 w-[60%] mx-auto"></div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
   if (cart.items.length === 0) {
     return (
-      <div className="section" style={{ maxWidth: 700 }}>
-        <div className="card" style={{ padding: "3rem 1rem", textAlign: "center" }}>
-          <h3 className="empty-title" style={{ color: "#0f172a" }}>Your cart is empty</h3>
-          <p className="muted" style={{ marginBottom: 1.5, color: "#64748b" }}>Looks like you have not added anything yet.</p>
-          <Link href="/" className="btn btn-primary">Browse Products</Link>
-        </div>
+      <div className="mx-auto max-w-[700px] py-8">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <CardTitle>Your cart is empty</CardTitle>
+            <p className="text-muted-foreground">Looks like you have not added anything yet.</p>
+            <Button asChild>
+              <Link href="/" className="block">Browse Products</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="section" style={{ maxWidth: 1000 }}>
-      <div className="stepper fade-in">
-        <div className="step active">
-          <div className="step-circle">1</div>
-          <div className="step-label" style={{ color: "#374151" }}>Checkout</div>
+    <div className="mx-auto max-w-[1000px] py-8">
+      <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">1</div>
+          <div className="text-sm font-medium text-primary">Checkout</div>
         </div>
-        <div className="step-line"></div>
-        <div className="step">
-          <div className="step-circle">2</div>
-          <div className="step-label" style={{ color: "#374151" }}>Payment</div>
+        <div className="h-px w-8 bg-muted"></div>
+        <div className="flex items-center gap-2 opacity-50">
+          <div className="w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">2</div>
+          <div className="text-sm font-medium text-muted-foreground">Payment</div>
         </div>
-        <div className="step-line"></div>
-        <div className="step">
-          <div className="step-circle">3</div>
-          <div className="step-label" style={{ color: "#374151" }}>Complete</div>
+        <div className="h-px w-8 bg-muted"></div>
+        <div className="flex items-center gap-2 opacity-50">
+          <div className="w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">3</div>
+          <div className="text-sm font-medium text-muted-foreground">Complete</div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "2rem" }}>
+      <div className="grid grid-cols-[1fr_380px] gap-8">
         <div>
-          <h1 className="page-title" style={{ marginBottom: 1, color: "#0f172a" }}>Checkout</h1>
-          <p className="muted" style={{ marginBottom: 1.5, color: "#64748b" }}>Review your order and shipping details before payment.</p>
+          <h1 className="text-2xl font-bold text-foreground mb-6">Checkout</h1>
+          <p className="text-muted-foreground mb-6">Review your order and shipping details before payment.</p>
 
           {message.text && (
-            <p className={message.type === "error" ? "error" : "success"}>{message.text}</p>
+            <p className={`mb-4 text-sm ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>{message.text}</p>
           )}
 
-          <form onSubmit={handleCheckout} className="card fade-in">
-            <div className="label" style={{ color: "#374151" }}>Telebirr Phone Number</div>
-            <input
-              name="phoneNumber"
-              type="tel"
-              required
-              className="input"
-              placeholder="e.g. 0912345678"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            <div className="label" style={{ marginTop: 1, color: "#374151" }}>
-              Shipping Address (Remote Delivery)
-            </div>
-            <div style={{ position: "relative", width: "100%" }}>
-              <input
-                ref={autocompleteRef}
-                name="shippingAddress"
-                type="text"
-                required
-                className="input"
-                placeholder="Start typing an address…"
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-                onFocus={() => setShowSuggestions(suggestions.length > 0)}
-              />
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="card" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, marginTop: 4, maxHeight: 240, overflowY: "auto" }}>
-                  {suggestions.map((s, i) => (
-                    <div
-                      key={i}
-                      onClick={() => selectSuggestion(s.display_name)}
-                      style={{
-                        padding: "0.6rem 0.8rem",
-                        fontSize: "0.9rem",
-                        cursor: "pointer",
-                        borderBottom: "1px solid #e2e8f0",
-                        background: i % 2 === 0 ? "#ffffff" : "#f8fafc",
-                        color: "#0f172a",
-                      }}
-                    >
-                      {s.display_name}
-                    </div>
-                  ))}
+          <Card>
+            <CardHeader>
+              <CardTitle>Shipping Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCheckout} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Telebirr Phone Number</Label>
+                  <Input
+                    name="phoneNumber"
+                    type="tel"
+                    required
+                    placeholder="e.g. 0912345678"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
-              )}
-            </div>
-            <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0.5, color: "#64748b" }}>
-              Start typing your address — suggestions from OpenStreetMap.
-            </p>
-            <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0.5, color: "#64748b" }}>
-              Pay via Telebirr mobile money. We ship to the address above.
-            </p>
-            <button type="submit" className="btn btn-primary" style={{ width: "100%", marginTop: 0.5 }}>
-              Place Order
-            </button>
-          </form>
+                <div className="space-y-2">
+                  <Label>Shipping Address</Label>
+                  <div className="relative w-full">
+                    <Input
+                      ref={autocompleteRef}
+                      name="shippingAddress"
+                      type="text"
+                      required
+                      placeholder="Start typing an address…"
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      onFocus={() => setShowSuggestions(suggestions.length > 0)}
+                    />
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto bg-background border border-input rounded-lg shadow-lg">
+                        {suggestions.map((s, i) => (
+                          <div
+                            key={i}
+                            onClick={() => selectSuggestion(s.display_name)}
+                            className={`p-2 text-sm cursor-pointer border-b border-input last:border-0 ${i % 2 === 0 ? "bg-background" : "bg-muted/50"}`}
+                          >
+                            {s.display_name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Start typing your address — suggestions from OpenStreetMap.
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Pay via Telebirr mobile money. We ship to the address above.
+                </p>
+                <Button type="submit" className="w-full">Place Order</Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="summary-card slide-in">
-          <h2 className="slide-in" style={{ fontSize: 1.1, fontWeight: 700, marginBottom: 1, color: "#0f172a" }}>Order Summary</h2>
-          <table className="table" style={{ marginBottom: 1.5 }}>
-            <thead>
-              <tr>
-                <th style={{ width: "50%", fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>Product</th>
-                <th style={{ width: "20%", textAlign: "center", fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>Qty</th>
-                <th style={{ width: "30%", textAlign: "right", fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cart.items.map((item) => (
-                <tr key={item.id} style={{ fontSize: "0.9rem" }}>
-                  <td style={{ fontWeight: 600, color: "#0f172a" }}>{item.product.name}</td>
-                  <td style={{ textAlign: "center", color: "#0f172a" }}>{item.quantity}</td>
-                  <td style={{ textAlign: "right", color: "#0f172a" }}>
-                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.product.price * item.quantity)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="summary-total">
-            <span style={{ color: "#0f172a" }}>Total</span>
-            <span style={{ color: "#0f172a" }}>
-              {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(cart.total)}
-            </span>
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Table>
+              <TableBody>
+                {cart.items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.product.name}</TableCell>
+                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-right">
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.product.price * item.quantity)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="mt-4 flex justify-between text-sm font-medium">
+              <span>Total</span>
+              <span>
+                {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(cart.total)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

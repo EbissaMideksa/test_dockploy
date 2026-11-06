@@ -1,5 +1,5 @@
-import { getCurrentUser } from "@/lib/auth"
-import Navbar from "@/components/navbar"
+import ClientNavbar from "@/components/ClientNavbar"
+import { ToastProvider } from "@/components/ui/toaster"
 import "./globals.css"
 
 export const metadata = {
@@ -7,18 +7,19 @@ export const metadata = {
   description: "Prisma ORM + PostgreSQL e-commerce test app",
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const user = await getCurrentUser()
   return (
     <html lang="en">
       <head />
       <body>
-        <Navbar user={user} />
-        <main>{children}</main>
+        <ToastProvider>
+          <ClientNavbar />
+          <main className="min-h-[calc(100vh-64px)]">{children}</main>
+        </ToastProvider>
       </body>
     </html>
   )

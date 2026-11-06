@@ -76,7 +76,7 @@ export async function getOrders() {
 }
 
 export async function getOrderById(orderId: string) {
-  const user = await requireAuth()
+  await requireAuth()
   return prisma.order.findUnique({
     where: { id: orderId },
     include: { items: { include: { product: true } }, payment: true },

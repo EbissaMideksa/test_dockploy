@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import AddToCartButton from "@/components/AddToCartButton"
+import { ImageZoom } from "@/components/ImageZoom"
+import { Badge } from "@/components/ui/badge"
 
 export const dynamic = "force-dynamic"
 
@@ -37,35 +39,31 @@ export default async function ProductPage({
   }
 
   return (
-    <div className="section" style={{ maxWidth: 980 }}>
-      <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: 320 }}>
+    <div className="mx-auto max-w-[980px] py-8">
+      <div className="flex gap-8 flex-wrap">
+        <div className="flex-1 min-w-[320px]">
           {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              style={{ width: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }}
-            />
+            <ImageZoom src={product.imageUrl} alt={product.name} className="border border-input" />
           ) : (
-            <div style={{ width: "100%", height: 320, borderRadius: 8, border: "1px dashed #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", background: "#f8fafc" }}>
+            <div className="w-full h-80 rounded-lg border-2 border-dashed border-input bg-muted text-muted-foreground flex items-center justify-center">
               No image
             </div>
           )}
         </div>
-        <div style={{ flex: 1, minWidth: 300 }}>
-          <h1 style={{ fontSize: 1.75, fontWeight: 700, margin: "0 0 0.5rem" }}>{product.name}</h1>
+        <div className="flex-1 min-w-[300px]">
+          <h1 className="text-2xl font-bold text-foreground mb-2">{product.name}</h1>
           {product.category && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "#64748b" }}>
-              <Link href={`/?cat=${product.category.slug}`}>{product.category.name}</Link>
+            <p className="text-sm text-muted-foreground mb-5">
+              <Link href={`/?cat=${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</Link>
             </p>
           )}
-          <p style={{ whiteSpace: "pre-line", margin: "0 0 1.25rem", color: "#334155" }}>
+          <p className="text-muted-foreground mb-5 whitespace-pre-line">
             {product.description ?? "No description available."}
           </p>
-          <p style={{ margin: "0 0 1rem", fontSize: 1.5, fontWeight: 700 }}>
+          <p className="text-xl font-bold text-foreground mb-4">
             {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(product.price))}
           </p>
-          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: product.stock > 0 ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
+          <p className={`text-sm font-semibold mb-4 ${product.stock > 0 ? "text-emerald-600" : "text-destructive"}`}>
             {product.stock > 0 ? `In stock (${product.stock})` : "Out of stock"}
           </p>
           <AddToCartButton productId={product.id} stock={product.stock} />
@@ -73,22 +71,18 @@ export default async function ProductPage({
       </div>
 
       {related.length > 0 && (
-        <div style={{ marginTop: 2.5 }}>
-          <h2 style={{ fontSize: 1.25, fontWeight: 700, marginBottom: 1 }}>Related Items</h2>
-          <div className="grid grid-cols-4">
+        <div className="mt-10">
+          <h2 className="text-lg font-bold text-foreground mb-4">Related Items</h2>
+          <div className="grid grid-cols-4 gap-4">
             {related.map((p) => (
-              <article key={p.id} className="card">
+              <article key={p.id} className="bg-card p-4 rounded-lg border border-input">
                 {p.imageUrl && (
-                  <img
-                    src={p.imageUrl}
-                    alt={p.name}
-                    style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 6, marginBottom: 0.5 }}
-                  />
+                  <ImageZoom src={p.imageUrl} alt={p.name} className="h-24 mb-2" zoom={1.4} />
                 )}
-                <h3 style={{ margin: "0 0 0.4rem", fontSize: 1 }}>
-                  <Link href={`/products/${p.slug}`}>{p.name}</Link>
+                <h3 className="text-sm font-semibold mb-1">
+                  <Link href={`/products/${p.slug}`} className="text-foreground hover:text-primary">{p.name}</Link>
                 </h3>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem" }}>
+                <p className="text-sm font-bold text-foreground">
                   {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(p.price))}
                 </p>
               </article>

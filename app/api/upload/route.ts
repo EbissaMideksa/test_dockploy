@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
 import { apiError, apiJson } from "@/lib/api"
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me"
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "./uploads"
+const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "/app/uploads"
 const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:80"
 
 async function requireAdmin() {
@@ -35,11 +34,11 @@ export async function POST(req: Request) {
   const fs = (await import("fs")) as typeof import("fs")
   const path = (await import("path")) as typeof import("path")
 
-  const uploadDir = path.join(process.cwd(), UPLOAD_DIR, folder)
+  const uploadDir = path.join(UPLOAD_DIR, folder)
   fs.mkdirSync(uploadDir, { recursive: true })
 
   const fileName = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
-  const filePath = path.join(process.cwd(), UPLOAD_DIR, fileName)
+  const filePath = path.join(UPLOAD_DIR, fileName)
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
 
