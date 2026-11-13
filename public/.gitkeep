@@ -1,0 +1,2 @@
+# Keep this file so the public/ directory is tracked by Git and present
+# in the Docker build context (Next.js standalone output requires it).
