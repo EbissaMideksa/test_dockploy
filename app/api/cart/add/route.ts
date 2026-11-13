@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     return apiError("Unauthenticated", 401)
   }
 
-  const { productId, quantity } = await readBody(req)
+  const { productId, variantId, quantity } = await readBody(req)
   if (!productId) {
     return apiError("productId is required")
   }
@@ -18,8 +18,17 @@ export async function POST(req: Request) {
   if (!product || !product.isActive) {
     return apiError("Product not found", 404)
   }
-  if (product.stock < qty) {
-    return apiError("Not enough stock", 400)
+
+  let stock = product.stock
+  if (variantId) {
+    const variant = await prisma.productVariant.findUnique({ where: { id: variantId } })
+    if (!variant || variant.productId !== productId) {
+      return apiError("Variant not found", 404)
+    }
+    stock = variant.stock
+  }
+  if (stock < qty) {
+    return apiError(`Only ${stock} item(s) left in stock`, 400)
   }
 
   let cart = await prisma.cart.findUnique({ where: { userId: user.id } })
@@ -28,16 +37,20 @@ export async function POST(req: Request) {
   }
 
   const existing = await prisma.cartItem.findFirst({
-    where: { cartId: cart.id, productId },
+    where: { cartId: cart.id, productId, variantId },
   })
   if (existing) {
+    const newQty = existing.quantity + qty
+    if (stock < newQty) {
+      return apiError(`Only ${stock} item(s) left in stock`, 400)
+    }
     await prisma.cartItem.update({
       where: { id: existing.id },
-      data: { quantity: existing.quantity + qty },
+      data: { quantity: newQty },
     })
   } else {
     await prisma.cartItem.create({
-      data: { cartId: cart.id, productId, quantity: qty },
+      data: { cartId: cart.id, productId, variantId, quantity: qty },
     })
   }
 
@@ -46,6 +59,7 @@ export async function POST(req: Request) {
     data: {
       userId: user.id,
       productId,
+      variantId,
       action: "added",
       quantity: qty,
     },

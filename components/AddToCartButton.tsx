@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input"
 
 interface AddToCartButtonProps {
   productId: string
+  variantId?: string
   stock: number
   defaultQuantity?: number
 }
 
 export default function AddToCartButton({
   productId,
+  variantId,
   stock,
   defaultQuantity = 1,
 }: AddToCartButtonProps) {
@@ -25,6 +27,7 @@ export default function AddToCartButton({
     setMessage({ text: "", type: "success" })
     const fd = new FormData()
     fd.append("productId", productId)
+    if (variantId) fd.append("variantId", variantId)
     fd.append("quantity", String(quantity))
     const res = await fetch("/api/cart/add", {
       method: "POST",
@@ -57,8 +60,13 @@ export default function AddToCartButton({
         type="submit"
         disabled={loading || stock === 0}
       >
-        {stock === 0 ? "Out of stock" : loading ? "Adding…" : "Add to Cart"}
+        {stock === 0 ? "Sold Out" : loading ? "Adding…" : "Add to Cart"}
       </Button>
+      {stock === 0 && (
+        <span className="ml-3 text-xs font-semibold text-destructive whitespace-nowrap">
+          Sold out — no more available
+        </span>
+      )}
       {message.text && (
         <span className={`ml-3 text-xs font-semibold whitespace-nowrap ${message.type === "error" ? "text-destructive" : "text-emerald-600"}`}>
           {message.text}
