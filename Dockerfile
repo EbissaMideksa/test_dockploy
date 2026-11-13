@@ -18,6 +18,7 @@ ENV PORT=3000
 RUN apk add --no-cache openssl && rm -rf /var/cache/apk/*
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 EXPOSE 3000
