@@ -22,4 +22,4 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js && node server.js"]
