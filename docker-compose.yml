@@ -46,7 +46,7 @@ services:
     volumes:
       - app_uploads:/usr/share/nginx/html/uploads:ro
     ports:
-      - "3010:80"
+      - "3099:80"
 volumes:
   postgres_data:
   app_uploads:
