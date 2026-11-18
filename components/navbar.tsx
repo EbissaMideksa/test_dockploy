@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState, useRef } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import type { AuthUser } from "@/lib/auth-types"
 
 interface NavbarProps {
-  user: { id: string; name: string; email: string; role: string } | null
+  user: AuthUser | null
 }
 
 export default function Navbar({ user }: NavbarProps) {
   const [cartCount, setCartCount] = useState(0)
   const [sseConnected, setSseConnected] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const eventSourceRef = useRef<EventSource | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { toast } = useToast()
@@ -20,17 +22,16 @@ export default function Navbar({ user }: NavbarProps) {
 
   async function handleLogout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (loggingOut) return
+    setLoggingOut(true)
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" })
-      if (res.ok) {
-        toast("Logged out successfully")
-        window.dispatchEvent(new Event("auth-changed"))
-        router.push("/login")
-        router.refresh()
-      } else {
-        toast({ title: "Logout failed", variant: "destructive" })
-      }
+      if (!res.ok) throw new Error("logout failed")
+      window.dispatchEvent(new Event("auth-changed"))
+      router.push("/login")
+      router.refresh()
     } catch {
+      setLoggingOut(false)
       toast({ title: "Logout failed", variant: "destructive" })
     }
   }
@@ -51,7 +52,9 @@ export default function Navbar({ user }: NavbarProps) {
         // ignore
       }
     }
-    void load()
+    queueMicrotask(() => {
+      void load()
+    })
 
     const es = new EventSource("/api/events")
     eventSourceRef.current = es
@@ -126,8 +129,8 @@ export default function Navbar({ user }: NavbarProps) {
                 </span>
                 <div className="inline-flex items-center gap-2">
                   <form action="/api/auth/logout" method="POST" onSubmit={handleLogout} className="inline">
-                    <Button variant="outline" size="sm" type="submit">
-                      Logout
+                    <Button variant="outline" size="sm" type="submit" disabled={loggingOut}>
+                      {loggingOut ? "Logging out…" : "Logout"}
                     </Button>
                   </form>
                   {adminLink}

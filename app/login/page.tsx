@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card"
 import { CardHeader } from "@/components/ui/card"
 import { CardTitle } from "@/components/ui/card"
 import { CardContent } from "@/components/ui/card"
+import { broadcastAuthChange } from "@/components/ClientNavbar"
+import type { AuthUser } from "@/lib/auth-types"
 
 export default function LoginPage() {
   const [error, setError] = useState("")
@@ -22,19 +24,26 @@ export default function LoginPage() {
     const fd = new FormData(e.currentTarget as HTMLFormElement)
     setLoading(true)
     setError("")
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      body: fd,
-    })
-    const data = await res.json()
-    setLoading(false)
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        body: fd,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || "Login failed")
+        toast({ title: data.error || "Login failed", variant: "destructive" })
+        return
+      }
       toast("Logged in successfully")
-      window.dispatchEvent(new Event("auth-changed"))
+      broadcastAuthChange((data.user as AuthUser | undefined) ?? null)
       router.push("/")
       router.refresh()
-    } else {
-      toast({ title: data.error || "Login failed", variant: "destructive" })
+    } catch {
+      setError("Login failed")
+      toast({ title: "Login failed", variant: "destructive" })
+    } finally {
+      setLoading(false)
     }
   }
 

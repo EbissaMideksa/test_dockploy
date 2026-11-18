@@ -78,4 +78,5 @@ export async function clearAuthCookie() {
     path: "/",
     maxAge: 0,
   })
+  cookieStore.delete("token")
 }

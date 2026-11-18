@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card"
 import { CardHeader } from "@/components/ui/card"
 import { CardTitle } from "@/components/ui/card"
 import { CardContent } from "@/components/ui/card"
+import { broadcastAuthChange } from "@/components/ClientNavbar"
+import type { AuthUser } from "@/lib/auth-types"
 
 export default function RegisterPage() {
   const [error, setError] = useState("")
@@ -28,19 +30,26 @@ export default function RegisterPage() {
     }
     setLoading(true)
     setError("")
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      body: fd,
-    })
-    const data = await res.json()
-    setLoading(false)
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        body: fd,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || "Registration failed")
+        toast({ title: data.error || "Registration failed", variant: "destructive" })
+        return
+      }
       toast("Account created successfully")
-      window.dispatchEvent(new Event("auth-changed"))
+      broadcastAuthChange((data.user as AuthUser | undefined) ?? null)
       router.push("/")
       router.refresh()
-    } else {
-      toast({ title: data.error || "Registration failed", variant: "destructive" })
+    } catch {
+      setError("Registration failed")
+      toast({ title: "Registration failed", variant: "destructive" })
+    } finally {
+      setLoading(false)
     }
   }
 

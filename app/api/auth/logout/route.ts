@@ -1,15 +1,9 @@
-import { cookies } from "next/headers"
+import { clearAuthCookie } from "@/lib/auth"
 import { apiJson } from "@/lib/api"
 import { broadcastEvent } from "@/lib/events"
 
 export async function POST() {
-  ;(await cookies()).set("token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  })
+  await clearAuthCookie()
 
   broadcastEvent({
     type: "auth_logout",

@@ -9,6 +9,7 @@ import {
   clearAuthCookie,
 } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { broadcastEvent } from "@/lib/events"
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") ?? "")
@@ -26,6 +27,18 @@ export async function login(formData: FormData) {
 
   const token = signToken({ id: user.id, email: user.email, role: user.role })
   await setAuthCookie(token)
+
+  broadcastEvent({
+    type: "auth_login",
+    data: {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      redirectTo: "/",
+    },
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath("/")
   return { success: true, user: { id: user.id, email: user.email, role: user.role } }
 }
@@ -52,12 +65,33 @@ export async function register(formData: FormData) {
 
   const token = signToken({ id: user.id, email: user.email, role: user.role })
   await setAuthCookie(token)
+
+  broadcastEvent({
+    type: "auth_login",
+    data: {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      redirectTo: "/",
+    },
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath("/")
   return { success: true, user }
 }
 
 export async function logout() {
   await clearAuthCookie()
+
+  broadcastEvent({
+    type: "auth_logout",
+    data: {
+      redirectTo: "/login",
+    },
+    timestamp: new Date().toISOString(),
+  })
+
   revalidatePath("/")
   return { success: true }
 }
