@@ -1,6 +1,7 @@
 import { getApiUser, readBody, apiError, apiJson } from "@/lib/api"
 import { prisma } from "@/lib/prisma"
 import { broadcastEvent } from "@/lib/events"
+import { decrementStockForItem } from "@/lib/stock"
 
 export async function POST(req: Request) {
   const user = await getApiUser()
@@ -14,7 +15,14 @@ export async function POST(req: Request) {
 
   const cart = await prisma.cart.findUnique({
     where: { userId: user.id },
-    include: { items: { include: { product: true } } },
+    include: {
+      items: {
+        include: {
+          product: true,
+          variant: true,
+        },
+      },
+    },
   })
   if (!cart || cart.items.length === 0) {
     return apiError("Cart is empty", 400)
@@ -22,10 +30,23 @@ export async function POST(req: Request) {
 
   let total = 0
   for (const item of cart.items) {
-    if (!item.product.isActive || item.product.stock < item.quantity) {
-      return apiError(`Product "${item.product.name}" is unavailable or low on stock`, 400)
+    if (!item.product.isActive) {
+      return apiError(`Product "${item.product.name}" is unavailable`, 400)
     }
-    total += Number(item.product.price) * item.quantity
+
+    const unitPrice = item.variant?.price ?? item.product.price
+    total += Number(unitPrice) * item.quantity
+
+    if (item.variant) {
+      if (item.variant.stock < item.quantity) {
+        return apiError(
+          `Only ${item.variant.stock} item(s) of "${item.product.name}" (${item.variant.color}/${item.variant.size}) left in stock`,
+          400
+        )
+      }
+    } else if (item.product.stock < item.quantity) {
+      return apiError(`Only ${item.product.stock} item(s) of "${item.product.name}" left in stock`, 400)
+    }
   }
 
   const orderNumber =
@@ -43,7 +64,7 @@ export async function POST(req: Request) {
         create: cart.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: item.product.price,
+          price: item.variant?.price ?? item.product.price,
         })),
       },
       payment: {
@@ -56,13 +77,14 @@ export async function POST(req: Request) {
         },
       },
     },
-    include: { items: { include: { product: true } }, payment: true },
+    include: { items: true, payment: true },
   })
 
   for (const item of cart.items) {
-    await prisma.product.update({
-      where: { id: item.productId },
-      data: { stock: { decrement: item.quantity } },
+    await decrementStockForItem({
+      productId: item.productId,
+      variantId: item.variantId,
+      quantity: item.quantity,
     })
   }
 

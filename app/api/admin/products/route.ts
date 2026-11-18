@@ -22,7 +22,6 @@ function parseProduct(fd: FormData) {
   const name = String(fd.get("name") ?? "").trim()
   const slug = String(fd.get("slug") ?? "").trim()
   const price = String(fd.get("price") ?? "").trim()
-  const stock = String(fd.get("stock") ?? "").trim()
   const imageUrl = String(fd.get("imageUrl") ?? "").trim() || undefined
   const rawCategoryId = String(fd.get("categoryId") ?? "").trim()
   const categoryId = rawCategoryId && rawCategoryId !== "none" ? rawCategoryId : undefined
@@ -33,7 +32,7 @@ function parseProduct(fd: FormData) {
     .map((s) => s.trim())
     .filter(Boolean)
 
-  return { name, slug, description, price, stock: parseInt(stock, 10) || 0, imageUrl, categoryId, isActive, relatedIds }
+  return { name, slug, description, price, imageUrl, categoryId, isActive, relatedIds }
 }
 
 export async function GET() {

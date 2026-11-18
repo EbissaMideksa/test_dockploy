@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
 import { TableBody } from "@/components/ui/table"
@@ -36,6 +37,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const eventSourceRef = useRef<EventSource | null>(null)
+  const router = useRouter()
 
   async function loadOrders() {
     try {
@@ -62,12 +64,16 @@ export default function OrdersPage() {
     es.addEventListener("order_updated", () => { loadOrders() })
     es.addEventListener("payment_completed", () => { loadOrders() })
     es.addEventListener("shipping_updated", () => { loadOrders() })
+    es.addEventListener("auth_logout", () => {
+      router.replace("/login")
+      router.refresh()
+    })
 
     return () => {
       es.close()
       eventSourceRef.current = null
     }
-  }, [])
+  }, [router])
 
   if (loading) {
     return (

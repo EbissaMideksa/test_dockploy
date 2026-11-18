@@ -14,9 +14,22 @@ export async function POST(req: Request) {
   }
   const qty = Math.max(1, Number(quantity) || 1)
 
-  const product = await prisma.product.findUnique({ where: { id: productId } })
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { _count: { select: { variants: true } } },
+  })
   if (!product || !product.isActive) {
     return apiError("Product not found", 404)
+  }
+
+  const hasVariants = product._count.variants > 0
+
+  if (hasVariants && !variantId) {
+    return apiError("Please select a variant for this product", 400)
+  }
+
+  if (variantId && !hasVariants) {
+    return apiError("This product does not have variants", 400)
   }
 
   let stock = product.stock

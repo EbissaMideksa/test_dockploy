@@ -19,14 +19,24 @@ export async function POST(req: Request) {
     return apiError("Cart not found", 404)
   }
 
-  const item = await prisma.cartItem.findUnique({ where: { id: cartItemId } })
+  const item = await prisma.cartItem.findUnique({
+    where: { id: cartItemId },
+    include: { variant: true },
+  })
   if (!item || item.cartId !== cart.id) {
     return apiError("Item not found", 404)
   }
 
-  const product = await prisma.product.findUnique({ where: { id: item.productId } })
-  if (product && product.stock < qty) {
-    return apiError("Not enough stock", 400)
+  let stock = 0
+  if (item.variant) {
+    stock = item.variant.stock
+  } else {
+    const product = await prisma.product.findUnique({ where: { id: item.productId } })
+    stock = product?.stock ?? 0
+  }
+
+  if (stock < qty) {
+    return apiError(`Only ${stock} item(s) left in stock`, 400)
   }
 
   await prisma.cartItem.update({

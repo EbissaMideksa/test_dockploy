@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import ImageUpload from "@/components/ImageUpload"
 import { Button } from "@/components/ui/button"
@@ -55,6 +56,7 @@ export default function AdminProductsPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [categoryId, setCategoryId] = useState("none")
   const eventSourceRef = useRef<EventSource | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     load()
@@ -64,12 +66,16 @@ export default function AdminProductsPage() {
 
     es.addEventListener("product_updated", async () => { await load() })
     es.addEventListener("stock_updated", async () => { await load() })
+    es.addEventListener("auth_logout", () => {
+      router.replace("/login")
+      router.refresh()
+    })
 
     return () => {
       es.close()
       eventSourceRef.current = null
     }
-  }, [])
+  }, [router])
 
   async function load() {
     const [pRes, cRes] = await Promise.all([
@@ -150,10 +156,6 @@ export default function AdminProductsPage() {
                 <Input name="price" type="number" step="0.01" required />
               </div>
               <div className="space-y-2">
-                <Label>Stock</Label>
-                <Input name="stock" type="number" required />
-              </div>
-              <div className="space-y-2">
                 <Label>Category</Label>
                 <Select value={categoryId} onValueChange={setCategoryId}>
                   <SelectTrigger>
@@ -198,7 +200,7 @@ export default function AdminProductsPage() {
             <TableHead>Name</TableHead>
             <TableHead>Category</TableHead>
             <TableHead className="text-right">Price</TableHead>
-            <TableHead className="text-center">Stock</TableHead>
+            <TableHead className="text-center">Stock (all variants)</TableHead>
             <TableHead className="text-center">Active</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>

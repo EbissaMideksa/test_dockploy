@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import AddToCartButton from "@/components/AddToCartButton"
 import { ImageZoom } from "@/components/ImageZoom"
-import { Badge } from "@/components/ui/badge"
 
 export const dynamic = "force-dynamic"
 
@@ -19,7 +18,13 @@ export default async function HomePage({
         isActive: true,
         ...(cat ? { category: { slug: cat } } : {}),
       },
-      include: { category: true },
+      include: {
+        category: true,
+        _count: { select: { variants: true } },
+        variants: {
+          select: { stock: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 24,
     }),
@@ -64,32 +69,50 @@ export default async function HomePage({
             <p>Try adjusting your search or browse all categories.</p>
           </div>
         ) : (
-          products.map((product, index) => (
-            <article key={product.id} className="card" style={{ animationDelay: `${index * 0.05}s` }}>
-              <div className="product-image">
-                {product.imageUrl ? (
-                  <ImageZoom src={product.imageUrl} alt={product.name} className="h-40" />
-                ) : (
-                  <span className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed border-input bg-muted text-muted-foreground">
-                    No image
-                  </span>
-                )}
-              </div>
-              <div className="product-info mt-2">
-                <span className="text-xs font-medium text-muted-foreground">{product.category?.name ?? "General"}</span>
-                <h3 className="text-base font-semibold text-foreground mt-1">
-                  <Link href={`/products/${product.slug}`} className="hover:text-primary">{product.name}</Link>
-                </h3>
-                <div className="product-stock mt-1 text-sm font-medium">
-                  {product.stock > 0 ? `In stock (${product.stock})` : "Out of stock"}
+          products.map((product, index) => {
+            const variantCount = product._count.variants
+            const totalStock = variantCount > 0
+              ? product.variants.reduce((sum, v) => sum + v.stock, 0)
+              : product.stock
+
+            return (
+              <article key={product.id} className="card" style={{ animationDelay: `${index * 0.05}s` }}>
+                <div className="product-image">
+                  {product.imageUrl ? (
+                    <ImageZoom src={product.imageUrl} alt={product.name} className="h-40" />
+                  ) : (
+                    <span className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed border-input bg-muted text-muted-foreground">
+                      No image
+                    </span>
+                  )}
                 </div>
-                <p className="product-price text-foreground mt-1">
-                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(product.price))}
-                </p>
-                <AddToCartButton productId={product.id} stock={product.stock} />
-              </div>
-            </article>
-          ))
+                <div className="product-info mt-2">
+                  <span className="text-xs font-medium text-muted-foreground">{product.category?.name ?? "General"}</span>
+                  <h3 className="text-base font-semibold text-foreground mt-1">
+                    <Link href={`/products/${product.slug}`} className="hover:text-primary">{product.name}</Link>
+                  </h3>
+                  <div className="product-stock mt-1 text-sm font-medium">
+                    {totalStock > 0 ? `In stock (${totalStock})` : "Out of stock"}
+                  </div>
+                  <p className="product-price text-foreground mt-1">
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(Number(product.price))}
+                  </p>
+                  {variantCount > 0 ? (
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="inline-block mt-1 rounded-md border border-input px-3 py-1 text-sm text-muted-foreground hover:bg-secondary"
+                    >
+                      Choose options
+                    </Link>
+                  ) : (
+                    <div className="mt-1">
+                      <AddToCartButton productId={product.id} stock={totalStock} />
+                    </div>
+                  )}
+                </div>
+              </article>
+            )
+          })
         )}
       </div>
     </div>

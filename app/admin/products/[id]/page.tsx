@@ -70,6 +70,8 @@ export default function AdminProductEditPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
 
+  const totalVariantStock = variants.reduce((sum, v) => sum + v.stock, 0)
+
   useEffect(() => {
     ;(async () => {
       try {
@@ -115,6 +117,11 @@ export default function AdminProductEditPage() {
     }
   }
 
+  async function loadVariants() {
+    const vRes = await fetch(`/api/products/${id}/variants`, { cache: "no-store" })
+    if (vRes.ok) setVariants(await vRes.json())
+  }
+
   async function addVariant() {
     if (!newVariant.color || !newVariant.size) {
       setMessage({ text: "Color and size are required", type: "error" })
@@ -137,8 +144,8 @@ export default function AdminProductEditPage() {
       setShowAddVariantForm(false)
       setNewVariant({ color: "", size: "", imageUrl: "", price: "", stock: "" })
       setVariantImageUrl("")
-      const vRes = await fetch(`/api/products/${id}/variants`, { cache: "no-store" })
-      if (vRes.ok) setVariants(await vRes.json())
+      await loadVariants()
+      setProduct((p) => (p ? { ...p, stock: data.stock ?? p.stock } : p))
     } else {
       setMessage({ text: data.error || "Failed to add variant", type: "error" })
     }
@@ -152,8 +159,9 @@ export default function AdminProductEditPage() {
       body: fd,
     })
     if (res.ok) {
-      const vRes = await fetch(`/api/products/${id}/variants`, { cache: "no-store" })
-      if (vRes.ok) setVariants(await vRes.json())
+      const data = await res.json().catch(() => ({}))
+      await loadVariants()
+      setProduct((p) => (p ? { ...p, stock: data.stock ?? p.stock } : p))
       setMessage({ text: "Variant updated", type: "success" })
     } else {
       setMessage({ text: "Failed to update variant", type: "error" })
@@ -166,7 +174,7 @@ export default function AdminProductEditPage() {
       method: "DELETE",
     })
     if (res.ok) {
-      setVariants((prev) => prev.filter((v) => v.id !== variantId))
+      await loadVariants()
       setMessage({ text: "Variant deleted", type: "success" })
     } else {
       setMessage({ text: "Failed to delete variant", type: "error" })
@@ -229,8 +237,8 @@ export default function AdminProductEditPage() {
               <Input name="price" type="number" step="0.01" required defaultValue={Number(product.price)} />
             </div>
             <div className="space-y-2">
-              <Label>Stock</Label>
-              <Input name="stock" type="number" required defaultValue={product.stock} />
+              <Label>Total stock (from variants)</Label>
+              <Input value={totalVariantStock} readOnly disabled className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label>Category</Label>

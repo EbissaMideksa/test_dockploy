@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Table } from "@/components/ui/table"
 import { TableBody } from "@/components/ui/table"
 import { TableCell } from "@/components/ui/table"
@@ -12,6 +13,8 @@ import { Button } from "@/components/ui/button"
 
 interface CartItem {
   id: string
+  variantId: string | null
+  label: string
   product: { id: string; slug: string; name: string; price: number; imageUrl: string | null; stock: number }
   quantity: number
 }
@@ -22,6 +25,7 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
   const eventSourceRef = useRef<EventSource | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     loadCart()
@@ -44,11 +48,16 @@ export default function CartPage() {
       }
     })
 
+    es.addEventListener("auth_logout", () => {
+      router.replace("/login")
+      router.refresh()
+    })
+
     return () => {
       es.close()
       eventSourceRef.current = null
     }
-  }, [])
+  }, [router])
 
   async function loadCart() {
     const res = await fetch("/api/cart", { cache: "no-store" })
@@ -126,7 +135,7 @@ export default function CartPage() {
               {items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
-                    <Link href={`/products/${item.product.slug}`}>{item.product.name}</Link>
+                    <Link href={`/products/${item.product.slug}`}>{item.label}</Link>
                   </TableCell>
                   <TableCell className="text-right">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.product.price)}

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
+import { decrementStockForItem } from "@/lib/stock"
 import { revalidatePath } from "next/cache"
 
 export async function checkout(formData: FormData) {
@@ -10,7 +11,14 @@ export async function checkout(formData: FormData) {
 
   const cart = await prisma.cart.findUnique({
     where: { userId: user.id },
-    include: { items: { include: { product: true } } },
+    include: {
+      items: {
+        include: {
+          product: true,
+          variant: true,
+        },
+      },
+    },
   })
   if (!cart || cart.items.length === 0) {
     return { error: "Cart is empty" }
@@ -18,10 +26,22 @@ export async function checkout(formData: FormData) {
 
   let total = 0
   for (const item of cart.items) {
-    if (!item.product.isActive || item.product.stock < item.quantity) {
-      return { error: `Product "${item.product.name}" is unavailable or low on stock` }
+    if (!item.product.isActive) {
+      return { error: `Product "${item.product.name}" is unavailable` }
     }
-    total += Number(item.product.price) * item.quantity
+
+    const unitPrice = item.variant?.price ?? item.product.price
+    total += Number(unitPrice) * item.quantity
+
+    if (item.variant) {
+      if (item.variant.stock < item.quantity) {
+        return {
+          error: `Only ${item.variant.stock} item(s) of "${item.product.name}" (${item.variant.color}/${item.variant.size}) left in stock`,
+        }
+      }
+    } else if (item.product.stock < item.quantity) {
+      return { error: `Only ${item.product.stock} item(s) of "${item.product.name}" left in stock` }
+    }
   }
 
   const orderNumber = "ORD-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase()
@@ -36,7 +56,7 @@ export async function checkout(formData: FormData) {
         create: cart.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: item.product.price,
+          price: item.variant?.price ?? item.product.price,
         })),
       },
       payment: {
@@ -53,9 +73,10 @@ export async function checkout(formData: FormData) {
   })
 
   for (const item of cart.items) {
-    await prisma.product.update({
-      where: { id: item.productId },
-      data: { stock: { decrement: item.quantity } },
+    await decrementStockForItem({
+      productId: item.productId,
+      variantId: item.variantId,
+      quantity: item.quantity,
     })
   }
 

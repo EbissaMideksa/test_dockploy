@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
 import { prisma } from "@/lib/prisma"
+import { syncProductStock } from "@/lib/stock"
 import { NextResponse } from "next/server"
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me"
@@ -45,7 +46,9 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json({ success: true, variant })
+    const totalStock = await syncProductStock(variant.productId)
+
+    return NextResponse.json({ success: true, variant, stock: totalStock })
   } catch {
     return NextResponse.json({ error: "Failed to update variant" }, { status: 500 })
   }
@@ -62,7 +65,8 @@ export async function DELETE(
 
   try {
     const { id } = await params
-    await prisma.productVariant.delete({ where: { id } })
+    const variant = await prisma.productVariant.delete({ where: { id } })
+    await syncProductStock(variant.productId)
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: "Failed to delete variant" }, { status: 500 })

@@ -28,6 +28,26 @@ async function main() {
   } else {
     console.log(`Admin user already exists: ${adminEmail}`)
   }
+
+  await backfillStockFromVariants()
+}
+
+async function backfillStockFromVariants() {
+  const products = await prisma.product.findMany({
+    select: { id: true, variants: { select: { stock: true } } },
+  })
+
+  let updated = 0
+  for (const product of products) {
+    if (product.variants.length === 0) continue
+    const stock = product.variants.reduce((sum, v) => sum + v.stock, 0)
+    await prisma.product.update({ where: { id: product.id }, data: { stock } })
+    updated++
+  }
+
+  if (updated > 0) {
+    console.log(`Synced product stock from variants for ${updated} product(s)`)
+  }
 }
 
 main()

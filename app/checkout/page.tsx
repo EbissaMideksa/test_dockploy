@@ -17,7 +17,7 @@ import { TableRow } from "@/components/ui/table"
 import { Label } from "@/components/ui/label"
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState({ items: [] as Array<{ id: string; product: { name: string; price: number }; quantity: number }>, total: 0 })
+  const [cart, setCart] = useState({ items: [] as Array<{ id: string; label: string; product: { name: string; price: number }; quantity: number }>, total: 0 })
   const [loading, setLoading] = useState(true)
   const [phone, setPhone] = useState("")
   const [shippingAddress, setShippingAddress] = useState("")
@@ -237,7 +237,7 @@ export default function CheckoutPage() {
               <TableBody>
                 {cart.items.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.product.name}</TableCell>
+                    <TableCell className="font-medium">{item.label}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">
                       {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(item.product.price * item.quantity)}
