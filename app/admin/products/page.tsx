@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
+import { useEventSubscription } from "@/components/EventsProvider"
 import ImageUpload from "@/components/ImageUpload"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,27 +56,26 @@ export default function AdminProductsPage() {
   const [imageUrl, setImageUrl] = useState("")
   const [showAddForm, setShowAddForm] = useState(false)
   const [categoryId, setCategoryId] = useState("none")
-  const eventSourceRef = useRef<EventSource | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    load()
-
-    const es = new EventSource("/api/events")
-    eventSourceRef.current = es
-
-    es.addEventListener("product_updated", async () => { await load() })
-    es.addEventListener("stock_updated", async () => { await load() })
-    es.addEventListener("auth_logout", () => {
+  useEventSubscription({
+    product_updated: () => {
+      void load()
+    },
+    stock_updated: () => {
+      void load()
+    },
+    auth_logout: () => {
       router.replace("/login")
       router.refresh()
-    })
+    },
+  })
 
-    return () => {
-      es.close()
-      eventSourceRef.current = null
-    }
-  }, [router])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void load()
+    })
+  }, [])
 
   async function load() {
     const [pRes, cRes] = await Promise.all([

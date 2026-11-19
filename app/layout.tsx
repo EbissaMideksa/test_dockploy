@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 import ClientNavbar from "@/components/ClientNavbar"
+import { EventsProvider } from "@/components/EventsProvider"
 import { ToastProvider } from "@/components/ui/toaster"
 import { getCurrentUser } from "@/lib/auth"
 import type { AuthUser } from "@/lib/auth-types"
@@ -25,8 +26,10 @@ export default async function RootLayout({
       <head />
       <body>
         <ToastProvider>
-          <ClientNavbar initialUser={user} />
-          <main className="min-h-[calc(100vh-64px)]">{children}</main>
+          <EventsProvider enabled={!!user}>
+            <ClientNavbar initialUser={user} />
+            <main className="min-h-[calc(100vh-64px)]">{children}</main>
+          </EventsProvider>
         </ToastProvider>
       </body>
     </html>

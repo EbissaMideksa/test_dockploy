@@ -3,8 +3,10 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useEffect, useState, useRef } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { useEventSubscription } from "@/components/EventsProvider"
+import NotificationBell from "@/components/NotificationBell"
 import type { AuthUser } from "@/lib/auth-types"
 
 interface NavbarProps {
@@ -13,12 +15,23 @@ interface NavbarProps {
 
 export default function Navbar({ user }: NavbarProps) {
   const [cartCount, setCartCount] = useState(0)
-  const [sseConnected, setSseConnected] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const eventSourceRef = useRef<EventSource | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { toast } = useToast()
   const router = useRouter()
+
+  const loadCartCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cart/count", { cache: "no-store" })
+      if (res.ok) {
+        const data = await res.json()
+        setCartCount(data.count ?? 0)
+      } else {
+        setCartCount(0)
+      }
+    } catch {
+      setCartCount(0)
+    }
+  }, [])
 
   async function handleLogout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,66 +49,26 @@ export default function Navbar({ user }: NavbarProps) {
     }
   }
 
-  useEffect(() => {
-    if (!user) return
-
-    let cancelled = false
-
-    const load = async () => {
-      try {
-        const res = await fetch("/api/cart/count", { cache: "no-store" })
-        if (!cancelled && res.ok) {
-          const data = await res.json()
-          setCartCount(data.count ?? 0)
-        }
-      } catch {
-        // ignore
-      }
-    }
-    queueMicrotask(() => {
-      void load()
-    })
-
-    const es = new EventSource("/api/events")
-    eventSourceRef.current = es
-
-    es.onopen = () => {
-      if (!cancelled) setSseConnected(true)
-    }
-
-    es.onerror = () => {
-      if (!cancelled) setSseConnected(false)
-    }
-
-    es.addEventListener("cart_updated", () => {
-      void load()
-    })
-
-    es.addEventListener("order_created", () => {
-      void load()
-    })
-
-    es.addEventListener("auth_logout", () => {
+  useEventSubscription({
+    cart_updated: () => {
+      void loadCartCount()
+    },
+    order_created: () => {
+      void loadCartCount()
+    },
+    auth_logout: () => {
       window.dispatchEvent(new Event("auth-changed"))
       router.push("/login")
       router.refresh()
+    },
+  })
+
+  useEffect(() => {
+    if (!user) return
+    queueMicrotask(() => {
+      void loadCartCount()
     })
-
-    pollRef.current = setInterval(() => {
-      if (es.readyState !== EventSource.OPEN) {
-        void load()
-      }
-    }, 5000)
-
-    return () => {
-      cancelled = true
-      es.close()
-      if (eventSourceRef.current === es) eventSourceRef.current = null
-      if (pollRef.current) clearInterval(pollRef.current)
-      pollRef.current = null
-      setSseConnected(false)
-    }
-  }, [user, router])
+  }, [user, loadCartCount])
 
   const adminLink = user?.role === "ADMIN" ? (
     <Link href="/admin" className="bg-primary text-white px-3 py-1 text-sm rounded-md hover:bg-primary/700">
@@ -103,8 +76,6 @@ export default function Navbar({ user }: NavbarProps) {
     </Link>
   ) : null
 
-  const liveStatus = sseConnected ? "● Live" : "● Polling"
-  const liveClass = sseConnected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
   const visibleCartCount = user ? cartCount : 0
 
   return (
@@ -128,6 +99,7 @@ export default function Navbar({ user }: NavbarProps) {
                   {user.name}
                 </span>
                 <div className="inline-flex items-center gap-2">
+                  <NotificationBell userId={user.id} isAdmin={user.role === "ADMIN"} />
                   <form action="/api/auth/logout" method="POST" onSubmit={handleLogout} className="inline">
                     <Button variant="outline" size="sm" type="submit" disabled={loggingOut}>
                       {loggingOut ? "Logging out…" : "Logout"}
@@ -153,13 +125,6 @@ export default function Navbar({ user }: NavbarProps) {
               </>
             )}
           </li>
-          {user ? (
-            <li>
-              <span className={`text-xs px-2 py-0.5 rounded-md ml-2 ${liveClass}`}>
-                {liveStatus}
-              </span>
-            </li>
-          ) : null}
         </ul>
       </div>
     </nav>

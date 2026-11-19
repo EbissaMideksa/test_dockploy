@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEventSubscription } from "@/components/EventsProvider"
 import { Table } from "@/components/ui/table"
 import { TableBody } from "@/components/ui/table"
 import { TableCell } from "@/components/ui/table"
@@ -24,40 +25,29 @@ export default function CartPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ text: "", type: "" as "error" | "success" })
-  const eventSourceRef = useRef<EventSource | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    loadCart()
-
-    const es = new EventSource("/api/events")
-    eventSourceRef.current = es
-
-    es.addEventListener("cart_updated", () => {
-      loadCart()
-    })
-
-    es.addEventListener("order_created", (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.userId) {
-          loadCart()
-        }
-      } catch {
-        loadCart()
+  useEventSubscription({
+    cart_updated: () => {
+      void loadCart()
+    },
+    order_created: (event) => {
+      const data = (event.data ?? {}) as { userId?: string }
+      if (data.userId) {
+        void loadCart()
       }
-    })
-
-    es.addEventListener("auth_logout", () => {
+    },
+    auth_logout: () => {
       router.replace("/login")
       router.refresh()
-    })
+    },
+  })
 
-    return () => {
-      es.close()
-      eventSourceRef.current = null
-    }
-  }, [router])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadCart()
+    })
+  }, [])
 
   async function loadCart() {
     const res = await fetch("/api/cart", { cache: "no-store" })

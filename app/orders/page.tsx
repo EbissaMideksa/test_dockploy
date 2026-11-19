@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEventSubscription } from "@/components/EventsProvider"
 import { Button } from "@/components/ui/button"
 import { Table } from "@/components/ui/table"
 import { TableBody } from "@/components/ui/table"
@@ -36,7 +37,6 @@ function badgeVariant(status: string) {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-  const eventSourceRef = useRef<EventSource | null>(null)
   const router = useRouter()
 
   async function loadOrders() {
@@ -52,28 +52,30 @@ export default function OrdersPage() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    ;(async () => {
-      await loadOrders()
-    })()
-
-    const es = new EventSource("/api/events")
-    eventSourceRef.current = es
-
-    es.addEventListener("order_created", () => { loadOrders() })
-    es.addEventListener("order_updated", () => { loadOrders() })
-    es.addEventListener("payment_completed", () => { loadOrders() })
-    es.addEventListener("shipping_updated", () => { loadOrders() })
-    es.addEventListener("auth_logout", () => {
+  useEventSubscription({
+    order_created: () => {
+      void loadOrders()
+    },
+    order_updated: () => {
+      void loadOrders()
+    },
+    payment_completed: () => {
+      void loadOrders()
+    },
+    shipping_updated: () => {
+      void loadOrders()
+    },
+    auth_logout: () => {
       router.replace("/login")
       router.refresh()
-    })
+    },
+  })
 
-    return () => {
-      es.close()
-      eventSourceRef.current = null
-    }
-  }, [router])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadOrders()
+    })
+  }, [])
 
   if (loading) {
     return (
