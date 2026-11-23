@@ -1,5 +1,3 @@
-
-
 services:
   db:
     image: postgres:16-alpine
@@ -15,6 +13,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   app:
     build: .
@@ -30,24 +30,24 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
-      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
+      UPLOAD_DIR: /app/uploads
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - app_uploads:/app/uploads
+    networks:
+      - default
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.app.rule=Host(`10.117.66.20`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
 
-  
-  nginx:
-    build:
-      context: ./nginx
-    image: test-dockploy-nginx:latest
-    depends_on:
-      app:
-        condition: service_started
-    restart: unless-stopped
-    volumes:
-      - app_uploads:/usr/share/nginx/html/uploads:ro
-    ports:
-      - "3099:80"
 volumes:
   postgres_data:
   app_uploads:
+
+networks:
+  dokploy-network:
+    external: true
