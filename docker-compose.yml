@@ -44,6 +44,15 @@ services:
       - "traefik.http.routers.app.entrypoints=web"
       - "traefik.http.services.app.loadbalancer.server.port=3000"
 
+  lan-proxy:
+    image: alpine/socat
+    restart: unless-stopped
+    command: "tcp-listen:3099,fork,reuseaddr tcp-connect:dokploy-traefik:80"
+    ports:
+      - "3099:3099"
+    networks:
+      - dokploy-network
+
 volumes:
   postgres_data:
   app_uploads:
